@@ -1,0 +1,124 @@
+[2025-07-29 21:55:20,157] [ERROR] [django.request] Internal Server Error: /api/v1/docs/
+Traceback (most recent call last):
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/views.py", line 110, in get
+    generator = self.generator_class(info, version, url, patterns=[])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/generators.py", line 223, in __init__
+    raise SwaggerGenerationError("`url` must be an absolute HTTP(S) url")
+drf_yasg.errors.SwaggerGenerationError: `url` must be an absolute HTTP(S) url
+[2025-07-29 21:55:20,159] [ERROR] [django.server] "GET /api/v1/docs/ HTTP/1.1" 500 98382
+[2025-07-29 21:55:24,377] [ERROR] [django.request] Internal Server Error: /api/v1/docs/
+Traceback (most recent call last):
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/views.py", line 110, in get
+    generator = self.generator_class(info, version, url, patterns=[])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/generators.py", line 223, in __init__
+    raise SwaggerGenerationError("`url` must be an absolute HTTP(S) url")
+drf_yasg.errors.SwaggerGenerationError: `url` must be an absolute HTTP(S) url
+[2025-07-29 21:55:24,381] [ERROR] [django.server] "GET /api/v1/docs/ HTTP/1.1" 500 98382
+[2025-07-29 21:56:08,790] [ERROR] [django.request] Internal Server Error: /api/v1/docs/
+Traceback (most recent call last):
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/views.py", line 110, in get
+    generator = self.generator_class(info, version, url, patterns=[])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/generators.py", line 223, in __init__
+    raise SwaggerGenerationError("`url` must be an absolute HTTP(S) url")
+drf_yasg.errors.SwaggerGenerationError: `url` must be an absolute HTTP(S) url
+[2025-07-29 21:56:08,795] [ERROR] [django.server] "GET /api/v1/docs/ HTTP/1.1" 500 98382
+[2025-07-29 21:56:35,691] [ERROR] [django.request] Internal Server Error: /api/v1/docs/
+Traceback (most recent call last):
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/views.py", line 110, in get
+    generator = self.generator_class(info, version, url, patterns=[])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fernandororato/Documents/F5Sys/Hotel/hotel-backend/venv/lib/python3.12/site-packages/drf_yasg/generators.py", line 223, in __init__
+    raise SwaggerGenerationError("`url` must be an absolute HTTP(S) url")
+drf_yasg.errors.SwaggerGenerationError: `url` must be an absolute HTTP(S) url
+[2025-07-29 21:56:35,694] [ERROR] [django.server] "GET /api/v1/docs/ HTTP/1.1" 500 98382
