@@ -19,16 +19,7 @@ Sistema de integração e gerenciamento de reservas para múltiplos clientes (ho
 ### 2. Build da imagem
 
 ```bash
-docker build -t hotel-api .
-```
-
-### 3. Executar container
-
-```bash
-docker run -d \
-  -p 8000:8000 \
-  --name hotel-api \
-  hotel-api
+docker-compose up --build -d
 ```
 
 ---
@@ -71,10 +62,6 @@ app/
 > Em breve: scripts de testes automatizados para endpoints.
 
 ---
-
-## 👨‍💻 Desenvolvedor
-
-**Fernando Rorato** - [LinkedIn](https://www.linkedin.com/in/fernandororato/)
 
 ---
 
