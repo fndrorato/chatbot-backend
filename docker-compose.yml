@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    container_name: hotel-api
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8000"
