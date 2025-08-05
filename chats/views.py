@@ -2,9 +2,12 @@ import logging
 from chats.models import Chat, Message
 from common.models import Origin
 from clients.models import Client
+from datetime import timedelta
+from django.utils import timezone
 from django.utils.timezone import now
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from chats.functions import get_chat_finished
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -32,7 +35,6 @@ class ChatCreateOrExistsView(APIView):
             type=openapi.TYPE_OBJECT,
             required=['_id', 'contact_id', 'origin'],
             properties={
-                '_id': openapi.Schema(type=openapi.TYPE_STRING, description='Chat ID'),
                 'contact_id': openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID'),
                 'flow': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Is part of flow'),
                 'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER, description='Selected flow option'),
@@ -73,18 +75,46 @@ class ChatCreateOrExistsView(APIView):
             if client.active is False:
                 return Response({'detail': 'Client is inactive'}, status=403)
             
-            chat_id = request.data.get('_id')
             contact_id = request.data.get('contact_id')
             flow = request.data.get('flow', False)
             flow_option = request.data.get('flow_option', 0)
             origin_name = request.data.get('origin')
 
-            if not all([chat_id, contact_id]):
+            if not all([contact_id]):
                 return Response({'detail': 'Missing required fields'}, status=400)
 
-            existing_chat = Chat.objects.filter(chat_id=chat_id, status='active').first()
+            # Verificando se existe algum chat ativo para o contact_id nas últimas 24 horas
+            time_threshold = timezone.now() - timedelta(hours=24)
+            existing_chat = Chat.objects.filter(
+                contact_id=contact_id,
+                status='active',
+                created_at__gte=time_threshold
+            ).first()
+
             if existing_chat:
-                return Response({"chat_exists": True}, status=200)
+                # Filtra mensagens do contato nas últimas 24h
+                messages_24h = Message.objects.filter(
+                    contact_id=contact_id,
+                    timestamp__gte=time_threshold
+                ).order_by('timestamp')
+                
+                chat_log = ""
+                for msg in messages_24h:
+                    if msg.content_input:
+                        chat_log += f"Input: {msg.content_input.strip()}\n"
+                    if msg.content_output:
+                        chat_log += f"Output: {msg.content_output.strip()}\n"
+
+                chat_log += "\nEssa conversa foi encerrada? Responda somente True ou False." 
+                chat_finished = get_chat_finished(chat_log)
+                
+                if chat_finished is False:
+                    return Response({
+                        "chat_exists": True, 
+                        "chat_id": existing_chat.id,
+                        "flow": existing_chat.flow,
+                        "flow_option": existing_chat.flow_option,
+                    }, status=200)               
 
             origin = Origin.objects.filter(name__iexact=origin_name).first()
             if not origin:
@@ -93,7 +123,6 @@ class ChatCreateOrExistsView(APIView):
             chat = Chat.objects.create(
                 client=client,
                 origin=origin,
-                chat_id=chat_id,
                 contact_id=contact_id,
                 flow=flow,
                 flow_option=flow_option,
@@ -102,7 +131,10 @@ class ChatCreateOrExistsView(APIView):
 
             return Response({
                 "chat_exists": False,
-                "chat_created": chat.created_at
+                "chat_created": chat.created_at,
+                "chat_id": chat.id,
+                "flow": chat.flow,
+                "flow_option": chat.flow_option
             }, status=201)
 
         except Exception as e:
@@ -219,7 +251,7 @@ class ChatDeleteView(APIView):
             if not chat_id:
                 return Response({'detail': 'chat_id is required'}, status=400)
 
-            chat = Chat.objects.filter(chat_id=chat_id, client=client).first()
+            chat = Chat.objects.filter(id=chat_id, client=client).first()
             if not chat:
                 return Response({'detail': 'Chat not found for this client'}, status=404)
 

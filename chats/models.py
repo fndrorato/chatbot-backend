@@ -6,7 +6,6 @@ from django.db import models
 class Chat(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='chats')
     origin = models.ForeignKey(Origin, on_delete=models.CASCADE, related_name='chats', null=True, blank=True)
-    chat_id = models.CharField(max_length=255, unique=True, help_text="Unique identifier for the chat")
     contact_id = models.CharField(max_length=255, unique=True)
     flow = models.BooleanField(default=False, help_text="Indicates if the chat is part of a flow")
     flow_option = models.IntegerField(default=0, help_text="Option selected in the flow, if applicable")
@@ -30,7 +29,6 @@ class Chat(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Chat'
         verbose_name_plural = 'Chats'
-
 
 class Message(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='messages')
