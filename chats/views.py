@@ -98,6 +98,15 @@ class ChatCreateOrExistsView(APIView):
                     timestamp__gte=time_threshold
                 ).order_by('timestamp')
                 
+                if not messages_24h.exists():
+                    print('Não existem mensagens nas últimas 24 horas.')
+                    return Response({
+                        "chat_exists": True, 
+                        "chat_id": existing_chat.id,
+                        "flow": existing_chat.flow,
+                        "flow_option": existing_chat.flow_option,
+                    }, status=200)                       
+                
                 chat_log = ""
                 for msg in messages_24h:
                     if msg.content_input:
