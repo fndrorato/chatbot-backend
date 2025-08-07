@@ -33,11 +33,9 @@ class ChatCreateOrExistsView(APIView):
         ],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['_id', 'contact_id', 'origin'],
+            required=['contact_id', 'origin'],
             properties={
                 'contact_id': openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID'),
-                'flow': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Is part of flow'),
-                'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER, description='Selected flow option'),
                 'origin': openapi.Schema(type=openapi.TYPE_STRING, description='Origin name (e.g. whatsapp)')
             }
         ),
@@ -133,22 +131,101 @@ class ChatCreateOrExistsView(APIView):
                 client=client,
                 origin=origin,
                 contact_id=contact_id,
-                flow=flow,
-                flow_option=flow_option,
                 status='active'
             )
 
             return Response({
                 "chat_exists": False,
                 "chat_created": chat.created_at,
-                "chat_id": chat.id,
-                "flow": chat.flow,
-                "flow_option": chat.flow_option
+                "chat_id": chat.id
             }, status=201)
 
         except Exception as e:
             logger.exception(f"Error processing chat creation: {str(e)}")
             return Response({"detail": f"Internal server error: {str(e)}"}, status=500)
+
+class ChatUpdateFlowView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Atualiza os campos 'flow' e 'flow_option' de um chat existente",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {client_token}",
+                required=True,
+                default="Bearer seu_token_aqui"
+            )
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['chat_id'],
+            properties={
+                'chat_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do chat a ser atualizado'),
+                'flow': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Indica se faz parte de um fluxo'),
+                'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER, description='Opção selecionada no fluxo'),
+            }
+        ),
+        responses={
+            200: openapi.Response('Chat atualizado com sucesso', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'chat_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                    'flow': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                    'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER),
+                }
+            )),
+            403: openapi.Response('Unauthorized'),
+            404: openapi.Response('Chat não encontrado'),
+            400: openapi.Response('Dados inválidos'),
+            500: openapi.Response('Erro interno'),
+        }
+    )
+    def put(self, request):
+        try:
+            auth_header = request.headers.get('Authorization', '')
+            if not auth_header.startswith('Bearer '):
+                return Response({'detail': 'Authorization header missing or invalid'}, status=403)
+
+            token = auth_header.split(' ')[1]
+            client = Client.objects.filter(token=token).first()
+            if not client:
+                return Response({'detail': 'Invalid token'}, status=403)
+            if client.active is False:
+                return Response({'detail': 'Client is inactive'}, status=403)
+
+            chat_id = request.data.get('chat_id')
+            if not chat_id:
+                return Response({'detail': 'Missing chat_id'}, status=400)
+
+            chat = Chat.objects.filter(id=chat_id, client=client).first()
+            if not chat:
+                return Response({'detail': 'Chat not found'}, status=404)
+
+            # Atualiza os campos se forem fornecidos
+            flow = request.data.get('flow')
+            flow_option = request.data.get('flow_option')
+
+            if flow is not None:
+                chat.flow = flow
+
+            if flow_option is not None:
+                chat.flow_option = flow_option
+
+            chat.save()
+
+            return Response({
+                'chat_id': chat.id,
+                'flow': chat.flow,
+                'flow_option': chat.flow_option,
+            }, status=200)
+
+        except Exception as e:
+            logger.exception(f"Erro ao atualizar chat: {str(e)}")
+            return Response({'detail': f'Erro interno: {str(e)}'}, status=500)
 
 class MessageCreateView(APIView):
     authentication_classes = []
