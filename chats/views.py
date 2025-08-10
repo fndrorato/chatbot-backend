@@ -249,6 +249,7 @@ class MessageCreateView(APIView):
             properties={
                 'origin': openapi.Schema(type=openapi.TYPE_STRING, description='Origem da mensagem (e.g., whatsapp)'),
                 'contact_id': openapi.Schema(type=openapi.TYPE_STRING, description='ID do contato'),
+                'chat_id': openapi.Schema(type=openapi.TYPE_STRING, description='ID do chat'),
                 'content_input': openapi.Schema(type=openapi.TYPE_STRING, description='Mensagem recebida do usuário'),
                 'content_output': openapi.Schema(type=openapi.TYPE_STRING, description='Resposta da IA')
             }
@@ -268,9 +269,13 @@ class MessageCreateView(APIView):
             token = auth_header.split(' ')[1]
             client = Client.objects.filter(token=token, active=True).first()
             if not client:
-                return Response({'detail': 'Invalid or inactive client'}, status=403)
+                return Response({'detail': 'Invalid or inactive client'}, status=403)            
 
             data = request.data
+            
+            if 'chat_id' not in data or 'contact_id' not in data:
+                return Response({'detail': 'chat_id and contact_id are required'}, status=400)
+            
             origin = None
             if 'origin' in data:
                 origin = Origin.objects.filter(name__iexact=data.get('origin')).first()
@@ -349,3 +354,88 @@ class ChatDeleteView(APIView):
         except Exception as e:
             logger.exception("Erro ao arquivar chat")
             return Response({"detail": str(e)}, status=500)
+
+class ChatLogView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Retorna o histórico completo (Input/Output) do chat no formato de texto",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {client_token}",
+                required=True,
+                default="Bearer seu_token_aqui"
+            ),
+            openapi.Parameter(
+                name='chat_id',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_INTEGER,
+                description="ID do chat",
+                required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response('OK', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'chat_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                    'contact_id': openapi.Schema(type=openapi.TYPE_STRING),
+                    'messages_count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                    'chat_log': openapi.Schema(type=openapi.TYPE_STRING),
+                }
+            )),
+            403: openapi.Response('Unauthorized'),
+            404: openapi.Response('Chat not found'),
+            500: openapi.Response('Internal server error'),
+        }
+    )
+    def get(self, request, chat_id: int):
+        try:
+            # Auth (mesmo padrão das outras views)
+            auth_header = request.headers.get('Authorization', '')
+            if not auth_header.startswith('Bearer '):
+                return Response({'detail': 'Authorization header missing or invalid'}, status=403)
+
+            token = auth_header.split(' ')[1]
+            client = Client.objects.filter(token=token).first()
+            if not client:
+                return Response({'detail': 'Invalid token'}, status=403)
+            if client.active is False:
+                return Response({'detail': 'Client is inactive'}, status=403)
+
+            # Busca o chat do próprio cliente
+            chat = Chat.objects.filter(id=chat_id, client=client).first()
+            if not chat:
+                return Response({'detail': 'Chat not found'}, status=404)
+
+            # Busca TODAS as mensagens que pertencem ao mesmo contexto do chat
+            messages = Message.objects.filter(
+                client=chat.client,
+                origin=chat.origin,
+                contact_id=chat.contact_id,
+            ).order_by('timestamp')
+
+            # Monta o chat_log
+            chat_log_parts = []
+            for msg in messages:
+                if msg.content_input:
+                    chat_log_parts.append(f"Input: {msg.content_input.strip()}")
+                if msg.content_output:
+                    chat_log_parts.append(f"Output: {msg.content_output.strip()}")
+
+            chat_log = "\n".join(chat_log_parts)
+
+            return Response({
+                "chat_id": chat.id,
+                "contact_id": chat.contact_id,
+                "messages_count": messages.count(),
+                "chat_log": chat_log
+            }, status=200)
+
+        except Exception as e:
+            logger.exception(f"Error generating chat log: {str(e)}")
+            return Response({"detail": f"Internal server error: {str(e)}"}, status=500)
