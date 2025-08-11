@@ -33,7 +33,7 @@ class Chat(models.Model):
 class Message(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='messages')
     origin = models.ForeignKey(Origin, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
-    chat_id = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages_chat_id')
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages_chat_id')
     contact_id = models.CharField(max_length=255, help_text="Sender of message, e.g., phone number or username")
     content_input = models.TextField(blank=True, null=True, help_text="Input content for the chat")
     content_output = models.TextField(blank=True, null=True, help_text="Response content from the chat")

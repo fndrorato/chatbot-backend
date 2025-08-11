@@ -280,9 +280,11 @@ class MessageCreateView(APIView):
             if 'origin' in data:
                 origin = Origin.objects.filter(name__iexact=data.get('origin')).first()
 
+            chat = Chat.objects.filter(id=data['chat_id'], client=client).first()
             message = Message.objects.create(
                 client=client,
                 origin=origin,
+                chat=chat,
                 contact_id=data['contact_id'],
                 content_input=data.get('content_input'),
                 content_output=data.get('content_output')
