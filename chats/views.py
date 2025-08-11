@@ -74,8 +74,8 @@ class ChatCreateOrExistsView(APIView):
                 return Response({'detail': 'Client is inactive'}, status=403)
             
             contact_id = request.data.get('contact_id')
-            flow = request.data.get('flow', False)
-            flow_option = request.data.get('flow_option', 0)
+            # flow = request.data.get('flow', False)
+            # flow_option = request.data.get('flow_option', 0)
             origin_name = request.data.get('origin')
 
             if not all([contact_id]):
@@ -114,7 +114,7 @@ class ChatCreateOrExistsView(APIView):
                     if msg.content_output:
                         chat_log += f"Output: {msg.content_output.strip()}\n"
 
-                chat_log += "\nEssa conversa foi encerrada? Você deve apenas responder True ou False." 
+                chat_log += "\nEssa conversa foi encerrada? Você deve apenas responder com True ou False." 
                 chat_finished = get_chat_finished(chat_log)
                 
                 if isinstance(chat_finished, str) and "false" in chat_finished.lower():

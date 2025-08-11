@@ -35,7 +35,7 @@ def get_chat_finished(chat_log):
         "include_retrieval_info": False,
         "include_guardrails_info": False
     }
-
+    print("Enviando para Ollama:", chat_log)
     response = requests.post(url, json=payload, headers=headers)
 
     if response.status_code == 200:
