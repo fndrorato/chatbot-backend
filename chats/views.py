@@ -90,6 +90,7 @@ class ChatCreateOrExistsView(APIView):
             ).first()
 
             if existing_chat:
+                print('chat existente nas últimas 24 horas.')
                 # Filtra mensagens do contato nas últimas 24h
                 messages_24h = Message.objects.filter(
                     contact_id=contact_id,
@@ -105,6 +106,7 @@ class ChatCreateOrExistsView(APIView):
                         "flow_option": existing_chat.flow_option,
                     }, status=200)                       
                 
+                print('existem mensagens nas ultimas 24 horas, verificando se o chat foi finalizado...')
                 chat_log = ""
                 for msg in messages_24h:
                     if msg.content_input:
@@ -112,10 +114,10 @@ class ChatCreateOrExistsView(APIView):
                     if msg.content_output:
                         chat_log += f"Output: {msg.content_output.strip()}\n"
 
-                chat_log += "\nEssa conversa foi encerrada? Responda somente True ou False." 
+                chat_log += "\nEssa conversa foi encerrada? Você deve apenas responder True ou False." 
                 chat_finished = get_chat_finished(chat_log)
                 
-                if chat_finished is False:
+                if isinstance(chat_finished, str) and "false" in chat_finished.lower():
                     return Response({
                         "chat_exists": True, 
                         "chat_id": existing_chat.id,
