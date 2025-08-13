@@ -81,8 +81,8 @@ class ChatCreateOrExistsView(APIView):
             if not all([contact_id]):
                 return Response({'detail': 'Missing required fields'}, status=400)
 
-            # Verificando se existe algum chat ativo para o contact_id nas últimas 24 horas
-            time_threshold = timezone.now() - timedelta(hours=24)
+            # Verificando se existe algum chat ativo para o contact_id nas últimas 12 horas
+            time_threshold = timezone.now() - timedelta(hours=12)
             existing_chat = Chat.objects.filter(
                 contact_id=contact_id,
                 status='active',
@@ -90,15 +90,15 @@ class ChatCreateOrExistsView(APIView):
             ).first()
 
             if existing_chat:
-                print('chat existente nas últimas 24 horas.')
-                # Filtra mensagens do contato nas últimas 24h
-                messages_24h = Message.objects.filter(
+                print('chat existente nas últimas 12 horas.')
+                # Filtra mensagens do contato nas últimas 12h
+                messages_12h = Message.objects.filter(
                     contact_id=contact_id,
                     timestamp__gte=time_threshold
                 ).order_by('timestamp')
                 
-                if not messages_24h.exists():
-                    print('Não existem mensagens nas últimas 24 horas.')
+                if not messages_12h.exists():
+                    print('Não existem mensagens nas últimas 12 horas.')
                     return Response({
                         "chat_exists": True, 
                         "chat_id": existing_chat.id,
@@ -108,14 +108,15 @@ class ChatCreateOrExistsView(APIView):
                 
                 print('existem mensagens nas ultimas 24 horas, verificando se o chat foi finalizado...')
                 chat_log = ""
-                for msg in messages_24h:
+                for msg in messages_12h:
                     if msg.content_input:
                         chat_log += f"Input: {msg.content_input.strip()}\n"
                     if msg.content_output:
                         chat_log += f"Output: {msg.content_output.strip()}\n"
 
                 chat_log += "\nEssa conversa foi encerrada? Você deve apenas responder com True ou False." 
-                chat_finished = get_chat_finished(chat_log)
+                # chat_finished = get_chat_finished(chat_log)
+                chat_finished = "false"  # Simulando a resposta da IA, deve ser substituído pela chamada real
                 
                 if isinstance(chat_finished, str) and "false" in chat_finished.lower():
                     return Response({
