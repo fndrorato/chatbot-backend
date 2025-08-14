@@ -52,6 +52,7 @@ class CheckAvailabilityView(APIView):
     )
     def post(self, request, client_type):
         try:
+            # ---------- Auth ----------
             auth_header = request.headers.get('Authorization', '')
             if not auth_header.startswith('Bearer '):
                 return Response({'detail': 'Authorization header missing or invalid'}, status=403)
@@ -64,6 +65,7 @@ class CheckAvailabilityView(APIView):
             if client_type != 'hotel':
                 return Response({'detail': 'Unsupported client type'}, status=400)
 
+            # ---------- Validação do body ----------
             data = request.data
             try:
                 from_date = datetime.strptime(data.get('from'), '%Y-%m-%d').date()
@@ -76,34 +78,58 @@ class CheckAvailabilityView(APIView):
             except Exception:
                 return Response({'detail': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
 
-            if data.get('adults', 0) <= 0:
+            if int(data.get('adults', 0)) <= 0:
                 return Response({'detail': 'Adults must be greater than 0'}, status=400)
-            if data.get('children', 0) < 0:
+            if int(data.get('children', 0)) < 0:
                 return Response({'detail': 'Children must be 0 or greater'}, status=400)
-            if data.get('rooms', 0) <= 0:
+            if int(data.get('rooms', 0)) <= 0:
                 return Response({'detail': 'Rooms must be greater than 0'}, status=400)
 
             origin = data.get('origin')
+
             payload = {
                 'token': client.api_token,
                 'from': data.get('from'),
                 'to': data.get('to'),
                 'adults': data.get('adults'),
                 'children': data.get('children'),
-                'rooms': data.get('rooms')
+                'rooms': data.get('rooms'),
             }
-            
 
+            # ---------- Requisição externa ----------
             url = f"{client.api_address}/app/reservations/checkAvailability"
             start_time = time.monotonic()
+            try:
+                response = requests.post(url, json=payload, timeout=30)
+            except requests.Timeout as ex:
+                elapsed = round(time.monotonic() - start_time, 3)
+                LogIntegration.objects.create(
+                    client_id=client, origin=origin, to=url, content=payload,
+                    response={'detail': 'timeout'}, status_http=504, response_time=elapsed
+                )
+                return Response({'detail': 'Upstream timeout'}, status=504)
+            except requests.RequestException as ex:
+                elapsed = round(time.monotonic() - start_time, 3)
+                LogIntegration.objects.create(
+                    client_id=client, origin=origin, to=url, content=payload,
+                    response={'detail': str(ex)}, status_http=502, response_time=elapsed
+                )
+                return Response({'detail': 'Upstream error', 'error': str(ex)}, status=502)
 
-            response = requests.post(url, json=payload, timeout=30)
+            elapsed = round(time.monotonic() - start_time, 3)
 
-            end_time = time.monotonic()
-            elapsed = round(end_time - start_time, 3)
+            # ---------- Parse do JSON ----------
+            try:
+                response_data = response.json()
+            except ValueError:
+                LogIntegration.objects.create(
+                    client_id=client, origin=origin, to=url, content=payload,
+                    response={'detail': 'invalid json', 'raw': response.text[:500]},
+                    status_http=response.status_code, response_time=elapsed
+                )
+                return Response({'detail': 'Invalid JSON from upstream'}, status=502)
 
-            response_data = response.json()
-
+            # Log sempre
             LogIntegration.objects.create(
                 client_id=client,
                 origin=origin,
@@ -114,11 +140,55 @@ class CheckAvailabilityView(APIView):
                 response_time=elapsed
             )
 
-            availability = response_data.get("data", [{}])[0].get("availability", [])
+            # ---------- Normalização do payload ----------
+            data_list = response_data.get("data") or []
+            if not isinstance(data_list, list) or not data_list:
+                # payload inesperado
+                return Response(
+                    {"availability": [], "status": "Invalid or empty data payload"},
+                    status=200
+                )
 
+            availability = data_list[0].get("availability", [])
+
+            # Caso: availability é um dict com status
+            if isinstance(availability, dict):
+                status_msg = availability.get("status", "")
+                if status_msg:
+                    # ex.: "There is no availability"
+                    return Response(
+                        {"availability": [], "status": status_msg},
+                        status=200
+                    )
+                # estrutura inesperada
+                return Response(
+                    {"availability": [], "status": "Unexpected availability object"},
+                    status=200
+                )
+
+            # Caso: availability None ou lista vazia
+            if not availability:
+                return Response(
+                    {"availability": [], "status": "No availability returned"},
+                    status=200
+                )
+
+            # Deve ser lista a partir daqui
+            if not isinstance(availability, list):
+                return Response(
+                    {"availability": [], "status": "Availability is not a list"},
+                    status=200
+                )
+
+            # ---------- Persistência segura ----------
             for room in availability:
+                if not isinstance(room, dict):
+                    continue
                 room_code = room.get("id_type")
                 room_type = room.get("type")
+                if not room_code:
+                    continue
+                # evita duplicata
                 if not HotelRooms.objects.filter(client_id=client, room_code=room_code).exists():
                     HotelRooms.objects.create(
                         client_id=client,
@@ -126,19 +196,26 @@ class CheckAvailabilityView(APIView):
                         room_type=room_type
                     )
 
-            cleaned = [
-                {
+            # ---------- Limpeza para resposta ----------
+            cleaned = []
+            for r in availability:
+                if not isinstance(r, dict):
+                    continue
+                details = r.get("details", [])
+                if not isinstance(details, list):
+                    details = []
+                cleaned.append({
                     "id_type": r.get("id_type"),
                     "type": r.get("type"),
-                    "details": r.get("details", [])
-                } for r in availability
-            ]
+                    "details": details
+                })
 
-            return Response({"availability": cleaned}, status=response.status_code)
+            return Response({"availability": cleaned, "status": "OK"}, status=200)
 
         except Exception as e:
             logger.exception("Erro ao verificar disponibilidade")
             return Response({"detail": str(e)}, status=500)
+
 
 class MakeReservationView(APIView):
     authentication_classes = []

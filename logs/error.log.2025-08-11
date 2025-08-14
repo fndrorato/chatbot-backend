@@ -1,0 +1,2 @@
+[2025-08-11 01:38:16,737] [ERROR] [django.request] Internal Server Error: /api/v1/chats/messages/hotel/
+[2025-08-11 01:38:16,738] [ERROR] [django.server] "POST /api/v1/chats/messages/hotel/ HTTP/1.1" 500 63
