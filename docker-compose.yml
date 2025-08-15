@@ -1,8 +1,20 @@
+# services:
+#   web:
+#     build: .
+#     container_name: hotel-api
+#     volumes:
+#       - .:/app
+#     ports:
+#       - "8001:8000"
 services:
   web:
     build: .
     container_name: hotel-api
-    volumes:
-      - .:/app
     ports:
       - "8001:8000"
+    volumes:
+      - .:/app                 
+      - sqlite_data:/app/data  # diretório do banco
+
+volumes:
+  sqlite_data:
