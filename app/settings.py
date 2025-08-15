@@ -98,10 +98,6 @@ else:
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='5432'),
             'CONN_MAX_AGE': 60,  # mantém conexões reutilizáveis (bom p/ prod)
-            'OPTIONS': {
-                # SSL se necessário:
-                # 'sslmode': 'require'
-            },
         }
     }
 
