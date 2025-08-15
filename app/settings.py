@@ -1,19 +1,22 @@
 import os
+from decouple import config
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-)l#o^j5u5szfyo36%=-sit@9njoot2sty$=pywln0fa-*m+557'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ENV = config('ENV', default='dev')  # 'dev' ou 'prod'
+DEBUG = config('DEBUG', cast=bool, default=(ENV == 'dev'))
 
-ALLOWED_HOSTS = []
-
+if ENV == 'prod':
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+else:
+    ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -77,12 +80,30 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Banco de dados
+if ENV == 'dev':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            'CONN_MAX_AGE': 60,  # mantém conexões reutilizáveis (bom p/ prod)
+            'OPTIONS': {
+                # SSL se necessário:
+                # 'sslmode': 'require'
+            },
+        }
+    }
 
 
 # Password validation
@@ -109,7 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 

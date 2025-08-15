@@ -9,6 +9,7 @@ class Chat(models.Model):
     contact_id = models.CharField(max_length=255)
     flow = models.BooleanField(default=False, null=True, blank=True, help_text="Indicates if the chat is part of a flow")
     flow_option = models.IntegerField(default=0, null=True, blank=True, help_text="Option selected in the flow, if applicable")
+    room_availability = models.BooleanField(default=False, help_text="Indicates if there is room availability")
     status = models.CharField(
         max_length=20,
         choices=[
