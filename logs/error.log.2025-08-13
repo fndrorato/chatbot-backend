@@ -1,0 +1,4 @@
+[2025-08-14 02:34:59,594] [ERROR] [django.request] Internal Server Error: /api/v1/systems/check-availability/hotel/
+[2025-08-14 02:34:59,597] [ERROR] [django.server] "POST /api/v1/systems/check-availability/hotel/ HTTP/1.1" 500 48
+[2025-08-14 02:36:38,818] [ERROR] [django.request] Internal Server Error: /api/v1/systems/check-availability/hotel/
+[2025-08-14 02:36:38,820] [ERROR] [django.server] "POST /api/v1/systems/check-availability/hotel/ HTTP/1.1" 500 48

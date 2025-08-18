@@ -3,6 +3,7 @@ import logging
 import requests
 import time
 from clients.models import Client
+from common.utils import parse_int
 from datetime import datetime, date
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -283,16 +284,23 @@ class MakeReservationView(APIView):
             from_date = datetime.strptime(data.get("from"), "%Y-%m-%d").date()
             to_date = datetime.strptime(data.get("to"), "%Y-%m-%d").date()
             today = date.today()
+            
+            try:
+                adults = parse_int(data, "adults")
+                children = parse_int(data, "children")
+                rooms = parse_int(data, "rooms")
+            except ValueError as ve:
+                return Response({"detail": str(ve)}, status=400)            
 
             if from_date < today:
                 return Response({"detail": "From date must be today or in the future"}, status=400)
             if to_date <= from_date:
                 return Response({"detail": "To date must be after from date"}, status=400)
-            if data.get("adults", 0) <= 0:
+            if adults <= 0:
                 return Response({"detail": "Adults must be greater than 0"}, status=400)
-            if data.get("children", 0) < 0:
+            if children < 0:
                 return Response({"detail": "Children must be 0 or greater"}, status=400)
-            if data.get("rooms", 0) <= 0:
+            if rooms <= 0:
                 return Response({"detail": "Rooms must be greater than 0"}, status=400)
 
             guests = data.get("guest_data", [])
