@@ -1,4 +1,6 @@
 import requests
+import os
+
 
 def get_chat_finished(chat_log):
     """
@@ -19,9 +21,13 @@ def get_chat_finished(chat_log):
 
     # Prepare the request to Ollama API
     url = "https://l5le7b5gpzkmmi3uvkzofv4y.agents.do-ai.run/api/v1/chat/completions"
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY não configurada")
+
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer dFByqKuxL-y49Pgwvk9kEPXguc8JGRZY"
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
     }
     payload = {
         "messages": [
