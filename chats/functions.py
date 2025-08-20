@@ -33,9 +33,15 @@ def get_chat_finished(chat_log):
     payload = {
         "model": "gpt-4.1-nano",
         "messages": [
-            {"role": "system", "content": "Você é um classificador. Responda apenas 'true' ou 'false'.\
-            Responda 'true' se a conversa claramente foi encerrada, ou 'false' caso contrário."},
-            {"role": "user", "content": chat_log}
+            {
+                "role": "system", 
+                "content": "Você é um classificador. Você deverá analisar o content e entender se ao final da conversa ela foi encerrada. Responda apenas 'true' ou 'false'.\
+            Responda 'true' se a conversa claramente foi encerrada, ou 'false' caso contrário."
+            },
+            {
+                "role": "user", 
+                "content": chat_log
+            }
         ],
         "temperature": 0,  # resposta determinística
         "max_tokens": 5    # garante que só venha 'true' ou 'false'
