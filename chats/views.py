@@ -126,7 +126,7 @@ class ChatCreateOrExistsView(APIView):
                     if msg.content_output:
                         chat_log += f"Output: {msg.content_output.strip()}\n"
 
-                chat_log += "\nEssa conversa foi encerrada? Você deve apenas responder com True ou False." 
+                chat_log += "\nAnalisando os inputs e outputs, que é uma conversa, essa conversa foi encerrada? Você deve apenas responder com True ou False." 
                 chat_finished = get_chat_finished(chat_log)
                 # chat_finished = "false"  # Simulando a resposta da IA, deve ser substituído pela chamada real
                 
