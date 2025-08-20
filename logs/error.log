@@ -1,4 +1,2 @@
-[2025-08-18 10:57:48,151] [ERROR] [django.request] Internal Server Error: /api/v1/systems/reservations/make/hotel/
-[2025-08-18 10:57:48,153] [ERROR] [django.server] "POST /api/v1/systems/reservations/make/hotel/ HTTP/1.1" 500 68
-[2025-08-18 10:58:45,264] [ERROR] [django.request] Internal Server Error: /api/v1/systems/reservations/make/hotel/
-[2025-08-18 10:58:45,264] [ERROR] [django.server] "POST /api/v1/systems/reservations/make/hotel/ HTTP/1.1" 500 68
+[2025-08-20 12:12:07,611] [ERROR] [django.request] Internal Server Error: /api/v1/chats/validate/
+[2025-08-20 12:12:07,614] [ERROR] [django.server] "POST /api/v1/chats/validate/ HTTP/1.1" 500 67

@@ -88,6 +88,7 @@ class ChatCreateOrExistsView(APIView):
                 status='active',
                 created_at__gte=time_threshold
             ).first()
+            print('irá verificar se o chat existe')
 
             if existing_chat:
                 print('chat existente nas últimas 12 horas.')
@@ -137,6 +138,7 @@ class ChatCreateOrExistsView(APIView):
                         "flow_option": existing_chat.flow_option,
                     }, status=200)               
 
+            print('chat não existe')
             origin = Origin.objects.filter(name__iexact=origin_name).first()
             if not origin:
                 return Response({'detail': f"Origin '{origin_name}' not found"}, status=404)
