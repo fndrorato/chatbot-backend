@@ -1,3 +1,4 @@
+import datetime
 import logging
 from chats.models import Chat, Message
 from common.models import Origin
@@ -60,6 +61,10 @@ class ChatCreateOrExistsView(APIView):
         }
     )
     def post(self, request):
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        print(f"[{current_time}] ChatCreateOrExistsView called")
+        print(f"[{current_time}] Request data: {request.data}")
         try:
             auth_header = request.headers.get('Authorization', '')
             if not auth_header.startswith('Bearer '):
