@@ -141,6 +141,7 @@ class ChatCreateOrExistsView(APIView):
                         "chat_id": existing_chat.id,
                         "flow": existing_chat.flow,
                         "flow_option": existing_chat.flow_option,
+                        "room_availability": existing_chat.room_availability
                     }, status=200)               
 
             print('chat não existe')
