@@ -4,7 +4,7 @@ from systems.views import (
     CheckAvailabilityView,
     GetReservationView,
     MakeReservationView,
-    
+    CancelReservationView,
 )
 
 app_name = 'systems'
@@ -14,6 +14,7 @@ urlpatterns = [
     path('reservations/make/<str:client_type>/', MakeReservationView.as_view(), name='make-reservations'),
     path('reservations/get/<str:client_type>/', GetReservationView.as_view(), name='get-reservations'),
     path('reservations/change/<str:client_type>/', ChangeReservationView.as_view(), name='change-reservations'),
+    path('reservations/cancel/<str:client_type>/', CancelReservationView.as_view(), name='cancel-reservations'),
 ]
     
     
