@@ -1,6 +1,5 @@
 import datetime
 import logging
-import json
 from chats.models import Chat, Message
 from common.models import Origin
 from clients.models import Client
@@ -164,9 +163,9 @@ class ChatCreateOrExistsView(APIView):
                 "room_availability": False
             }
             
-            formatted_json = json.dumps(chat_data, indent=4)
+            # formatted_json = json.dumps(chat_data, indent=4)
 
-            print(f"[{current_time}] Chat Criado: {formatted_json}")       
+            print(f"[{current_time}] Chat Criado: {chat_data}")       
 
             return Response({
                 "chat_exists": False,
