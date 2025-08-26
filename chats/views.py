@@ -120,7 +120,8 @@ class ChatCreateOrExistsView(APIView):
                         "chat_exists": False,
                         "chat_created": chat.created_at,
                         "chat_id": chat.id,
-                        "room_availability": False
+                        "room_availability": False,
+                        "rooms": 0
                     }, status=201)                     
                 
                 print('existem mensagens nas ultimas 24 horas, verificando se o chat foi finalizado...')
@@ -141,7 +142,8 @@ class ChatCreateOrExistsView(APIView):
                         "chat_id": existing_chat.id,
                         "flow": existing_chat.flow,
                         "flow_option": existing_chat.flow_option,
-                        "room_availability": existing_chat.room_availability
+                        "room_availability": existing_chat.room_availability,
+                        "rooms": existing_chat.rooms
                     }, status=200)               
 
             print('chat não existe')
@@ -161,7 +163,8 @@ class ChatCreateOrExistsView(APIView):
                 "chat_exists": False,
                 "chat_created": chat.created_at,
                 "chat_id": chat.id,
-                "room_availability": False
+                "room_availability": False,
+                "rooms": 0
             }
             
             # formatted_json = json.dumps(chat_data, indent=4)
@@ -172,7 +175,8 @@ class ChatCreateOrExistsView(APIView):
                 "chat_exists": False,
                 "chat_created": chat.created_at,
                 "chat_id": chat.id,
-                "room_availability": False
+                "room_availability": False,
+                "rooms": 0
             }, status=201)
 
         except Exception as e:
@@ -203,6 +207,7 @@ class ChatUpdateFlowView(APIView):
                 'flow': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Indica se faz parte de um fluxo'),
                 'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER, description='Opção selecionada no fluxo'),
                 'room_availability': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Indica true ou false se há disponibilidade de quartos'),
+                'rooms': openapi.Schema(type=openapi.TYPE_INTEGER, description='Número de quartos reservados'),
             }
         ),
         responses={
@@ -213,6 +218,7 @@ class ChatUpdateFlowView(APIView):
                     'flow': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                     'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER),
                     'room_availability': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                    'rooms': openapi.Schema(type=openapi.TYPE_INTEGER),
                 }
             )),
             403: openapi.Response('Unauthorized'),
@@ -246,6 +252,7 @@ class ChatUpdateFlowView(APIView):
             flow = request.data.get('flow')
             flow_option = request.data.get('flow_option')
             room_availability = request.data.get('room_availability')
+            rooms = request.data.get('rooms')
 
             if flow is not None:
                 chat.flow = flow
@@ -255,6 +262,9 @@ class ChatUpdateFlowView(APIView):
 
             if room_availability is not None:
                 chat.room_availability = room_availability
+            
+            if rooms is not None:
+                chat.rooms = rooms
 
             chat.save()
 
@@ -262,7 +272,8 @@ class ChatUpdateFlowView(APIView):
                 'chat_id': chat.id,
                 'flow': chat.flow,
                 'flow_option': chat.flow_option,
-                'room_availability': chat.room_availability
+                'room_availability': chat.room_availability,
+                'rooms': chat.rooms
             }, status=200)
 
         except Exception as e:
