@@ -340,6 +340,265 @@ class MakeReservationView(APIView):
             logger.exception("Erro ao realizar reserva")
             return Response({"detail": str(e)}, status=500)
 
+def _parse_int(value, field_name):
+    """Converte para int aceitando string '10' etc.; lança ValueError com mensagem amigável."""
+    try:
+        return int(str(value).strip())
+    except Exception:
+        raise ValueError(f"Field '{field_name}' must be an integer.")
+
+def _parse_date(value, field_name):
+    """Converte YYYY-MM-DD para date; lança ValueError se inválido."""
+    try:
+        return datetime.strptime(str(value).strip(), "%Y-%m-%d").date()
+    except Exception:
+        raise ValueError(f"Field '{field_name}' must be a date in format YYYY-MM-DD.")
+
+def _mask_card(card: str) -> str:
+    """Mascarar cartão para logs: mantém só últimos 4 dígitos."""
+    if not card:
+        return ""
+    digits = re.sub(r"\D", "", card)
+    tail = digits[-4:] if len(digits) >= 4 else digits
+    return f"**** **** **** {tail}" if tail else "****"
+
+
+class MakeMultiReservationsView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Efetua múltiplas reservas (um POST por quarto) para clientes do tipo hotel.",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {client_token}",
+                required=True,
+                default="Bearer seu_token_aqui"
+            )
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Items(
+                type=openapi.TYPE_OBJECT,
+                required=[
+                    "full_name", "adults", "childrens", "document", "phone",
+                    "payment_method", "check_in", "check_out", "id_type", "id_fee"
+                ],
+                properties={
+                    "full_name": openapi.Schema(type=openapi.TYPE_STRING),
+                    "adults": openapi.Schema(type=openapi.TYPE_STRING, description="int ou string numérica"),
+                    "childrens": openapi.Schema(type=openapi.TYPE_STRING, description="int ou string numérica"),
+                    "document": openapi.Schema(type=openapi.TYPE_STRING),
+                    "phone": openapi.Schema(type=openapi.TYPE_STRING),
+                    "payment_method": openapi.Schema(type=openapi.TYPE_STRING),
+                    "credit_card_data": openapi.Schema(type=openapi.TYPE_STRING, description="será concatenado em observation"),
+                    "check_in": openapi.Schema(type=openapi.TYPE_STRING, format="date"),
+                    "check_out": openapi.Schema(type=openapi.TYPE_STRING, format="date"),
+                    "id_type": openapi.Schema(type=openapi.TYPE_STRING, description="int ou string numérica"),
+                    "id_fee": openapi.Schema(type=openapi.TYPE_STRING, description="int ou string numérica"),
+                    # campos opcionais extras, se quiser:
+                    "origin": openapi.Schema(type=openapi.TYPE_STRING),
+                }
+            )
+        ),
+        responses={
+            200: "JSON com resumo e detalhes por reserva"
+        }
+    )
+    def post(self, request, client_type):
+        try:
+            # --- Auth + client ---
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Authorization header missing or invalid"}, status=403)
+            token = auth_header.split(" ")[1]
+
+            client = Client.objects.filter(token=token, active=True).first()
+            if not client:
+                return Response({"detail": "Invalid or inactive client"}, status=403)
+
+            if client_type != 'hotel':
+                return Response({"detail": "Unsupported client type"}, status=400)
+
+            # --- Entrada deve ser uma lista ---
+            data = request.data
+            if not isinstance(data, list) or len(data) == 0:
+                return Response({"detail": "Request body must be a non-empty JSON array."}, status=400)
+
+            url = f"{client.api_address}/app/reservations/makeReservation"
+            today = date.today()
+
+            results = []
+            success_count = 0
+            fail_count = 0
+
+            for idx, item in enumerate(data):
+                # Valida campos obrigatórios por item
+                missing = [k for k in ["full_name","adults","childrens","document","phone",
+                                       "payment_method","check_in","check_out","id_type","id_fee"]
+                           if item.get(k) in (None, "")]
+                if missing:
+                    results.append({
+                        "index": idx,
+                        "full_name": item.get("full_name"),
+                        "status": "error",
+                        "message": f"Missing required fields: {', '.join(missing)}"
+                    })
+                    fail_count += 1
+                    continue
+
+                try:
+                    # Parse e validações
+                    check_in = _parse_date(item["check_in"], "check_in")
+                    check_out = _parse_date(item["check_out"], "check_out")
+                    if check_in < today:
+                        raise ValueError("check_in must be today or in the future.")
+                    if check_out <= check_in:
+                        raise ValueError("check_out must be after check_in.")
+
+                    adults = _parse_int(item["adults"], "adults")
+                    childrens = _parse_int(item["childrens"], "childrens")
+                    id_type = _parse_int(item["id_type"], "id_type")
+                    id_fee = _parse_int(item["id_fee"], "id_fee")
+
+                    if adults <= 0:
+                        raise ValueError("adults must be greater than 0.")
+                    if childrens < 0:
+                        raise ValueError("childrens must be 0 or greater.")
+
+                    # observation = payment_method | credit_card_data
+                    payment_method = str(item.get("payment_method", "")).strip()
+                    cc_raw = str(item.get("credit_card_data", "")).strip()
+                    observation = f"{payment_method} | {cc_raw}" if payment_method or cc_raw else ""
+
+                    # Monta payload esperado pelo endpoint do cliente
+                    # (espelha a sua rota de 1 quarto, mapeando nomes)
+                    payload = {
+                        "from": check_in.strftime("%Y-%m-%d"),
+                        "to": check_out.strftime("%Y-%m-%d"),
+                        "adults": adults,
+                        "children": childrens,
+                        "rooms": 1,  # 1 quarto por item
+                        "id_fee": id_fee,
+                        "id_type": id_type,
+                        "document_guest": item["document"],
+                        "guest": item["full_name"],
+                        "phone_guest": item["phone"],
+                        "observation": observation,
+                        "origin": item.get("origin"),
+                        "guest_data": [
+                            {
+                                "document_guest": item["document"],
+                                "guest": item["full_name"],
+                                "guest_pax": str(adults + childrens),
+                                "phone_guest": item["phone"],
+                            }
+                        ],
+                        "token": client.api_token,  # auth do cliente externo
+                    }
+
+                    # POST por reserva
+                    start_time = time.monotonic()
+                    resp = requests.post(url, json=payload, timeout=30)
+                    elapsed = round(time.monotonic() - start_time, 3)
+
+                    # response safe json
+                    try:
+                        response_data = resp.json()
+                    except Exception:
+                        response_data = {"raw": resp.text}
+
+                    # LogIntegration (mascarando cartão nos logs)
+                    masked_obs = f"{payment_method} | {_mask_card(cc_raw)}" if payment_method or cc_raw else ""
+                    log_payload = {**payload, "observation": masked_obs}
+                    LogIntegration.objects.create(
+                        client_id=client,
+                        origin=item.get("origin"),
+                        to=url,
+                        content=log_payload,
+                        response=response_data,
+                        status_http=resp.status_code,
+                        response_time=elapsed
+                    )
+
+                    # extrai mensagem amigável, se possível
+                    try:
+                        msg = response_data['data'][0]['response'][0]['msg']
+                    except (KeyError, IndexError, TypeError):
+                        msg = "Reserva processada."
+
+                    if 200 <= resp.status_code < 300:
+                        success_count += 1
+                        results.append({
+                            "index": idx,
+                            "full_name": item["full_name"],
+                            "status": "success",
+                            "http_status": resp.status_code,
+                            "message": msg
+                        })
+                    else:
+                        fail_count += 1
+                        results.append({
+                            "index": idx,
+                            "full_name": item["full_name"],
+                            "status": "error",
+                            "http_status": resp.status_code,
+                            "message": msg,
+                            "details": response_data
+                        })
+
+                except ValueError as ve:
+                    fail_count += 1
+                    results.append({
+                        "index": idx,
+                        "full_name": item.get("full_name"),
+                        "status": "error",
+                        "message": str(ve)
+                    })
+                except requests.Timeout:
+                    fail_count += 1
+                    results.append({
+                        "index": idx,
+                        "full_name": item.get("full_name"),
+                        "status": "error",
+                        "message": "Upstream timeout (30s) while creating reservation."
+                    })
+                except Exception as e:
+                    logger.exception("Erro ao processar reserva index=%s", idx)
+                    fail_count += 1
+                    results.append({
+                        "index": idx,
+                        "full_name": item.get("full_name"),
+                        "status": "error",
+                        "message": str(e)
+                    })
+
+            summary = {
+                "requested": len(data),
+                "succeeded": success_count,
+                "failed": fail_count,
+            }
+
+            # Status HTTP geral: 207 (Multi-Status) se teve mistura, 200 se tudo ok, 400 se tudo falhou
+            if success_count and fail_count:
+                http_status = 207
+            elif success_count and not fail_count:
+                http_status = 200
+            else:
+                http_status = 400
+
+            return Response({
+                "summary": summary,
+                "results": results
+            }, status=http_status)
+
+        except Exception as e:
+            logger.exception("Erro em MakeMultiReservationsView")
+            return Response({"detail": str(e)}, status=500)
+
 class GetReservationView(APIView):
     authentication_classes = []
     permission_classes = []
