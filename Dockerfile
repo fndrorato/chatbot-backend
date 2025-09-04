@@ -15,11 +15,12 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Sempre executar o migrate antes de iniciar o servidor
-# RUN python manage.py migrate
+# RUN python manage.py collectstatic --noinput 
 
 # Comando para expor a porta para acessar o projeto
 EXPOSE 8000
 
 # Comando para iniciar o servidor
-CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+# CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+CMD python manage.py migrate && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000
 # CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
