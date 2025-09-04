@@ -1,11 +1,4 @@
-# services:
-#   web:
-#     build: .
-#     container_name: hotel-api
-#     volumes:
-#       - .:/app
-#     ports:
-#       - "8001:8000"
+
 services:
   web:
     build: .
@@ -13,8 +6,31 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - .:/app                 
-      - sqlite_data:/app/data  # diretório do banco
+      - .:/app
+    environment:
+      - DB_NAME=hotel
+      - DB_USER=hotel
+      - DB_PASSWORD=supersecret
+      - DB_HOST=db
+      - DB_PORT=5432
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: hotel-db
+    environment:
+      - POSTGRES_DB=hotel
+      - POSTGRES_USER=hotel
+      - POSTGRES_PASSWORD=supersecret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
 
 volumes:
-  sqlite_data:
+  postgres_data:
