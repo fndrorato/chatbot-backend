@@ -14,7 +14,7 @@ ENV = config('ENV', default='dev')  # 'dev' ou 'prod'
 DEBUG = config('DEBUG', cast=bool, default=(ENV == 'dev'))
 
 if ENV == 'prod':
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['*']
 else:
     ALLOWED_HOSTS = ['*']
 
