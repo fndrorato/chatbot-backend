@@ -10,7 +10,7 @@ class LogIntegrationAdmin(admin.ModelAdmin):
 
 @admin.register(HotelRooms)
 class HotelRoomsAdmin(admin.ModelAdmin):
-    list_display = ('client_id', 'room_code', 'room_type', 'created_at')
+    list_display = ('client_id', 'room_code', 'room_type', 'number_of_pax', 'created_at')
     search_fields = ('client_id__name', 'room_code', 'room_type')
     list_filter = ('created_at',)
     ordering = ('-created_at',)
