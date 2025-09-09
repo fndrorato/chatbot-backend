@@ -34,8 +34,9 @@ class CheckAvailabilityView(APIView):
         ],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['from', 'to', 'adults', 'children', 'rooms', 'origin'],
+            required=['contact_id','from', 'to', 'adults', 'children', 'rooms', 'origin'],
             properties={
+                'contact_id': openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID'),
                 'from': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
                 'to': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
                 'adults': openapi.Schema(type=openapi.TYPE_INTEGER),
@@ -79,14 +80,17 @@ class CheckAvailabilityView(APIView):
             except Exception:
                 return Response({'detail': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
 
-            if int(data.get('adults', 0)) <= 0:
+            if int(data.get('adults', 0)) < 0:
                 return Response({'detail': 'Adults must be greater than 0'}, status=400)
-            if int(data.get('children', 0)) < 0:
+            if int(data.get('children', 0)) <= 0:
                 return Response({'detail': 'Children must be 0 or greater'}, status=400)
             if int(data.get('rooms', 0)) <= 0:
                 return Response({'detail': 'Rooms must be greater than 0'}, status=400)
 
             origin = data.get('origin')
+            contact_id = request.data.get('contact_id')
+            if not contact_id:
+                contact_id = 'unknown'
 
             payload = {
                 'token': client.api_token,
@@ -105,14 +109,14 @@ class CheckAvailabilityView(APIView):
             except requests.Timeout as ex:
                 elapsed = round(time.monotonic() - start_time, 3)
                 LogIntegration.objects.create(
-                    client_id=client, origin=origin, to=url, content=payload,
+                    client_id=client, origin=origin, to=url, content=payload, contact_id=contact_id,
                     response={'detail': 'timeout'}, status_http=504, response_time=elapsed
                 )
                 return Response({'detail': 'Upstream timeout'}, status=504)
             except requests.RequestException as ex:
                 elapsed = round(time.monotonic() - start_time, 3)
                 LogIntegration.objects.create(
-                    client_id=client, origin=origin, to=url, content=payload,
+                    client_id=client, origin=origin, to=url, content=payload, contact_id=contact_id,
                     response={'detail': str(ex)}, status_http=502, response_time=elapsed
                 )
                 return Response({'detail': 'Upstream error', 'error': str(ex)}, status=502)
@@ -124,7 +128,7 @@ class CheckAvailabilityView(APIView):
                 response_data = response.json()
             except ValueError:
                 LogIntegration.objects.create(
-                    client_id=client, origin=origin, to=url, content=payload,
+                    client_id=client, origin=origin, to=url, content=payload, contact_id=contact_id,
                     response={'detail': 'invalid json', 'raw': response.text[:500]},
                     status_http=response.status_code, response_time=elapsed
                 )
@@ -136,6 +140,7 @@ class CheckAvailabilityView(APIView):
                 origin=origin,
                 to=url,
                 content=payload,
+                contact_id=contact_id,
                 response=response_data,
                 status_http=response.status_code,
                 response_time=elapsed
@@ -187,29 +192,72 @@ class CheckAvailabilityView(APIView):
                     continue
                 room_code = room.get("id_type")
                 room_type = room.get("type")
+                number_of_pax = None
+
+                # 2. Verifique se a chave 'photos' existe e é uma lista não vazia
+                photos = room.get("photos")
+                if isinstance(photos, list) and photos:
+                    # 3. Acesse o primeiro item da lista 'photos' e pegue o 'number_of_pax'
+                    number_of_pax = photos[0].get("number_of_pax")
+
                 if not room_code:
                     continue
-                # evita duplicata
-                if not HotelRooms.objects.filter(client_id=client, room_code=room_code).exists():
-                    HotelRooms.objects.create(
-                        client_id=client,
-                        room_code=room_code,
-                        room_type=room_type
-                    )
 
+                # Busca o quarto. Se ela existir, atualiza. Se não, cria.
+                # room_instance, created = HotelRooms.objects.update_or_create(
+                #     client_id=client,
+                #     room_code=room_code,
+                #     defaults={
+                #         'room_type': room_type,
+                #         'number_of_pax': number_of_pax
+                #     }
+                # )  
+                room_instance, created = HotelRooms.objects.update_or_create(
+                    client_id=client,
+                    room_code=room_code,
+                    defaults={
+                        'room_type': room_type
+                    }
+                )                                
+
+            total_pax = int(data.get('adults', 0)) + int(data.get('children', 0))
+            available_rooms = HotelRooms.objects.filter(client_id=client, number_of_pax__gte=total_pax)
+            
+            filtered_room_codes = {room.room_code for room in available_rooms}
+            
+            # Calcula a diferença de dias entre as datas de entrada e saída
+            number_of_nights = (to_date - from_date).days            
+            
             # ---------- Limpeza para resposta ----------
             cleaned = []
             for r in availability:
                 if not isinstance(r, dict):
                     continue
-                details = r.get("details", [])
-                if not isinstance(details, list):
-                    details = []
-                cleaned.append({
-                    "id_type": r.get("id_type"),
-                    "type": r.get("type"),
-                    "details": details
-                })
+                # Filtra a resposta para incluir apenas os quartos que atendem aos critérios de lotação
+                if r.get("id_type") in filtered_room_codes:
+                    details = r.get("details", [])
+                    if not isinstance(details, list):
+                        details = []
+                    
+                    # Itera sobre os detalhes para recalcular o total
+                    for detail in details:
+                        if isinstance(detail, dict):
+                            # Tenta pegar o unit_total, garantindo que é um número
+                            try:
+                                unit_total = float(detail.get("unit_total", 0))
+                                # Recalcula o total com base no número de noites
+                                new_total = unit_total * number_of_nights
+                                # Atualiza o valor no dicionário
+                                detail['total'] = new_total
+                            except (ValueError, TypeError):
+                                # Se a conversão falhar, mantém o valor original ou 0
+                                detail['total'] = detail.get("total", 0)
+
+                    cleaned.append({
+                        "id_type": r.get("id_type"),
+                        "type": r.get("type"),
+                        "details": details
+                    })
 
             return Response({"availability": cleaned, "status": "OK"}, status=200)
 
@@ -236,7 +284,7 @@ class MakeReservationView(APIView):
         ],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["from", "to", "adults", "children", "rooms", "id_fee", "id_type", "document_guest", "guest", "phone_guest", "guest_data"],
+            required=["from", "to", "adults", "children", "rooms", "id_fee", "id_type", "document_guest", "guest", "phone_guest", "guest_data", "contact_id"],
             properties={
                 "from": openapi.Schema(type=openapi.TYPE_STRING, format="date"),
                 "to": openapi.Schema(type=openapi.TYPE_STRING, format="date"),
@@ -262,7 +310,8 @@ class MakeReservationView(APIView):
                         },
                         required=["document_guest", "guest"]
                     )
-                )
+                ),
+                "contact_id": openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID')
             }
         )
     )
@@ -318,10 +367,15 @@ class MakeReservationView(APIView):
             elapsed = round(end_time - start_time, 3)
 
             response_data = response.json()
+            
+            contact_id = request.data.get('contact_id')
+            if not contact_id:
+                contact_id = 'unknown'
 
             LogIntegration.objects.create(
                 client_id=client,
                 origin=data.get("origin"),
+                contact_id=contact_id,
                 to=url,
                 content=payload,
                 response=response_data,
@@ -401,6 +455,7 @@ class MakeMultiReservationsView(APIView):
                     "id_fee": openapi.Schema(type=openapi.TYPE_STRING, description="int ou string numérica"),
                     # campos opcionais extras, se quiser:
                     "origin": openapi.Schema(type=openapi.TYPE_STRING),
+                    "contact_id": openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID')
                 }
             )
         ),
@@ -514,9 +569,15 @@ class MakeMultiReservationsView(APIView):
                     # LogIntegration (mascarando cartão nos logs)
                     masked_obs = f"{payment_method} | {_mask_card(cc_raw)}" if payment_method or cc_raw else ""
                     log_payload = {**payload, "observation": masked_obs}
+                    
+                    contact_id = request.data.get('contact_id')
+                    if not contact_id:
+                        contact_id = 'unknown'       
+             
                     LogIntegration.objects.create(
                         client_id=client,
                         origin=item.get("origin"),
+                        contact_id=contact_id,
                         to=url,
                         content=log_payload,
                         response=response_data,
@@ -621,6 +682,7 @@ class GetReservationView(APIView):
             properties={
                 "id_reserva": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "origin": openapi.Schema(type=openapi.TYPE_STRING),
+                "contact_id": openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID')
             }
         )
     )
@@ -654,10 +716,15 @@ class GetReservationView(APIView):
             elapsed = round(end_time - start_time, 3)
 
             response_data = response.json()
+            
+            contact_id = request.data.get('contact_id')
+            if not contact_id:
+                contact_id = 'unknown'            
 
             LogIntegration.objects.create(
                 client_id=client,
                 origin=request.data.get("origin"),
+                contact_id=contact_id,
                 to=url,
                 content=payload,
                 response=response_data,
@@ -712,6 +779,7 @@ class ChangeReservationView(APIView):
                 "id_reserva": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "observation": openapi.Schema(type=openapi.TYPE_STRING),
                 "origin": openapi.Schema(type=openapi.TYPE_STRING),
+                "contact_id": openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID'),
                 "guest_data": openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Items(
@@ -771,10 +839,15 @@ class ChangeReservationView(APIView):
             elapsed = round(end_time - start_time, 3)
 
             response_data = response.json()
+            
+            contact_id = request.data.get('contact_id')
+            if not contact_id:
+                contact_id = 'unknown'            
 
             LogIntegration.objects.create(
                 client_id=client,
                 origin=data.get("origin"),
+                contact_id=contact_id,
                 to=url,
                 content=payload,
                 response=response_data,
@@ -812,6 +885,7 @@ class CancelReservationView(APIView):
                 "id_reserva": openapi.Schema(type=openapi.TYPE_STRING),
                 "reason": openapi.Schema(type=openapi.TYPE_STRING),
                 "origin": openapi.Schema(type=openapi.TYPE_STRING),
+                "contact_id": openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID')
             }
         )
     )
@@ -846,10 +920,15 @@ class CancelReservationView(APIView):
             elapsed = round(end_time - start_time, 3)
 
             response_data = response.json()
+            
+            contact_id = request.data.get('contact_id')
+            if not contact_id:
+                contact_id = 'unknown'            
 
             LogIntegration.objects.create(
                 client_id=client,
                 origin=data.get("origin"),
+                contact_id=contact_id,
                 to=url,
                 content=payload,
                 response=response_data,
@@ -885,6 +964,7 @@ class LogIntegrationView(APIView):
             required=['content', 'response', 'status_http'],
             properties={
                 'origin': openapi.Schema(type=openapi.TYPE_STRING, description='Origin of the log (whatsapp, facebook, instagram)'),
+                'contact_id': openapi.Schema(type=openapi.TYPE_STRING, description='Contact ID'),
                 'to': openapi.Schema(type=openapi.TYPE_STRING, description='Destination'),
                 'content': openapi.Schema(type=openapi.TYPE_STRING, description='Payload enviado'),
                 'response': openapi.Schema(type=openapi.TYPE_STRING, description='Resposta recebida'),
@@ -909,9 +989,15 @@ class LogIntegrationView(APIView):
                 return Response({'detail': 'Invalid or inactive client'}, status=403)
 
             data = request.data
+            
+            contact_id = request.data.get('contact_id')
+            if not contact_id:
+                contact_id = 'unknown'
+                            
             log = LogIntegration.objects.create(
                 client_id=client,
                 origin=data.get('origin'),
+                contact_id=contact_id,
                 to=data.get('to'),
                 content=data.get('content'),
                 response=data.get('response'),
