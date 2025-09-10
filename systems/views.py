@@ -97,7 +97,7 @@ class CheckAvailabilityView(APIView):
                 'token': client.api_token,
                 'from': data.get('from'),
                 'to': data.get('to'),
-                'adults': data.get('adults'),
+                'adults': int(data.get('adults',0))+int(data.get('children',0)),
                 'children': data.get('children'),
                 'rooms': data.get('rooms'),
             }
