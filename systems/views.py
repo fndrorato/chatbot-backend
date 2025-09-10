@@ -80,11 +80,12 @@ class CheckAvailabilityView(APIView):
             except Exception:
                 return Response({'detail': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
 
-            if int(data.get('adults', 0)) < 0:
+            if int(data.get('adults', 0)) <= 0:
                 return Response({'detail': 'Adults must be greater than 0'}, status=400)
-            if int(data.get('children', 0)) <= 0:
+            if int(data.get('children', 0)) < 0:
+                print(f'Children: {data.get("children")}')
                 return Response({'detail': 'Children must be 0 or greater'}, status=400)
-            if int(data.get('rooms', 0)) <= 0:
+            if int(data.get('rooms', 0)) < 0:
                 return Response({'detail': 'Rooms must be greater than 0'}, status=400)
 
             origin = data.get('origin')
@@ -148,6 +149,7 @@ class CheckAvailabilityView(APIView):
 
             # ---------- Normalização do payload ----------
             data_list = response_data.get("data") or []
+            
             if not isinstance(data_list, list) or not data_list:
                 # payload inesperado
                 return Response(
