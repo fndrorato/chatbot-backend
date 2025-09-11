@@ -208,6 +208,7 @@ class ChatUpdateFlowView(APIView):
                 'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER, description='Opção selecionada no fluxo'),
                 'room_availability': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Indica true ou false se há disponibilidade de quartos'),
                 'rooms': openapi.Schema(type=openapi.TYPE_INTEGER, description='Número de quartos reservados'),
+                'language': openapi.Schema(type=openapi.TYPE_STRING, description='Idioma preferido para o chat'),
             }
         ),
         responses={
@@ -219,6 +220,7 @@ class ChatUpdateFlowView(APIView):
                     'flow_option': openapi.Schema(type=openapi.TYPE_INTEGER),
                     'room_availability': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                     'rooms': openapi.Schema(type=openapi.TYPE_INTEGER),
+                    'language': openapi.Schema(type=openapi.TYPE_STRING),
                 }
             )),
             403: openapi.Response('Unauthorized'),
@@ -253,6 +255,7 @@ class ChatUpdateFlowView(APIView):
             flow_option = request.data.get('flow_option')
             room_availability = request.data.get('room_availability')
             rooms = request.data.get('rooms')
+            language = request.data.get('language')
 
             if flow is not None:
                 chat.flow = flow
@@ -265,6 +268,9 @@ class ChatUpdateFlowView(APIView):
             
             if rooms is not None:
                 chat.rooms = rooms
+            
+            if language is not None:
+                chat.language = language
 
             chat.save()
 
@@ -273,7 +279,8 @@ class ChatUpdateFlowView(APIView):
                 'flow': chat.flow,
                 'flow_option': chat.flow_option,
                 'room_availability': chat.room_availability,
-                'rooms': chat.rooms
+                'rooms': chat.rooms,
+                'language': chat.language
             }, status=200)
 
         except Exception as e:

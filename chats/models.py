@@ -21,6 +21,7 @@ class Chat(models.Model):
         default='active',
         help_text="Status of the chat"
     )
+    language = models.CharField(max_length=20, default='unknow', null=True, blank=True, help_text="Language preference for the chat")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
