@@ -121,7 +121,8 @@ class ChatCreateOrExistsView(APIView):
                         "chat_created": chat.created_at,
                         "chat_id": chat.id,
                         "room_availability": False,
-                        "rooms": 0
+                        "rooms": 0,
+                        "language": "espanhol"
                     }, status=201)                     
                 
                 print('existem mensagens nas ultimas 24 horas, verificando se o chat foi finalizado...')
@@ -143,10 +144,10 @@ class ChatCreateOrExistsView(APIView):
                         "flow": existing_chat.flow,
                         "flow_option": existing_chat.flow_option,
                         "room_availability": existing_chat.room_availability,
-                        "rooms": existing_chat.rooms
+                        "rooms": existing_chat.rooms,
+                        "language": existing_chat.language
                     }, status=200)               
 
-            print('chat não existe')
             origin = Origin.objects.filter(name__iexact=origin_name).first()
             if not origin:
                 return Response({'detail': f"Origin '{origin_name}' not found"}, status=404)
@@ -164,7 +165,8 @@ class ChatCreateOrExistsView(APIView):
                 "chat_created": chat.created_at,
                 "chat_id": chat.id,
                 "room_availability": False,
-                "rooms": 0
+                "rooms": 0,
+                "language": "espanhol"
             }
             
             # formatted_json = json.dumps(chat_data, indent=4)
@@ -176,7 +178,8 @@ class ChatCreateOrExistsView(APIView):
                 "chat_created": chat.created_at,
                 "chat_id": chat.id,
                 "room_availability": False,
-                "rooms": 0
+                "rooms": 0,
+                "language": "espanhol"
             }, status=201)
 
         except Exception as e:
