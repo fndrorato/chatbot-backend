@@ -1,7 +1,9 @@
 asgiref==3.9.1
 certifi==2025.7.14
 charset-normalizer==3.4.2
+diff-match-patch==20241021
 Django==5.2.4
+django-import-export==4.3.10
 django-jazzmin==3.0.1
 django-unfold==0.63.0
 djangorestframework==3.16.0
@@ -10,12 +12,13 @@ idna==3.10
 inflection==0.5.1
 packaging==25.0
 pillow==11.3.0
-# psycopg2==2.9.10
+psycopg2==2.9.10
 psycopg2-binary==2.9.10
 python-decouple==3.8
 pytz==2025.2
 PyYAML==6.0.2
 requests==2.32.4
 sqlparse==0.5.3
+tablib==3.8.0
 uritemplate==4.2.0
 urllib3==2.5.0
