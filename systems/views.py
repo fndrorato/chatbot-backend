@@ -43,6 +43,11 @@ class CheckAvailabilityView(APIView):
                 'children': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'rooms': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'origin': openapi.Schema(type=openapi.TYPE_STRING),
+                'children_age': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    description='Idades das crianças, se houver (ex: [3,5,7])',
+                    items=openapi.Items(type=openapi.TYPE_INTEGER),
+                ),                
             }
         ),
         responses={
@@ -87,9 +92,28 @@ class CheckAvailabilityView(APIView):
                 return Response({'detail': 'Children must be 0 or greater'}, status=400)
             if int(data.get('rooms', 0)) < 0:
                 return Response({'detail': 'Rooms must be greater than 0'}, status=400)
+            
+            # --- Validação children_age ---
+            children_count = int(data.get('children', 0))
+            children_age = data.get('children_age', [])
+
+            # Se há crianças, verificar se as idades foram informadas corretamente
+            if children_count > 0:
+                if not isinstance(children_age, list):
+                    return Response({'detail': 'children_age must be a list of ages (e.g. [3,5,7])'}, status=400)
+                if len(children_age) != children_count:
+                    return Response({'detail': f'children_age must contain exactly {children_count} items'}, status=400)
+                for age in children_age:
+                    if not isinstance(age, int) or age < 0:
+                        return Response({'detail': 'Each child age must be a positive integer'}, status=400)
+            else:
+                # Se não há crianças, o campo children_age deve estar ausente ou vazio
+                if children_age:
+                    return Response({'detail': 'children_age should be empty when children = 0'}, status=400)            
 
             origin = data.get('origin')
             contact_id = request.data.get('contact_id')
+            children_ages = data.get('children_age', [])
             if not contact_id:
                 contact_id = 'unknown'
 
@@ -97,10 +121,15 @@ class CheckAvailabilityView(APIView):
                 'token': client.api_token,
                 'from': data.get('from'),
                 'to': data.get('to'),
-                'adults': int(data.get('adults',0))+int(data.get('children',0)),
+                'adults': int(data.get('adults',0)),
                 'children': data.get('children'),
                 'rooms': data.get('rooms'),
             }
+            
+            # Se tiver crianças e idades fornecidas
+            if children_ages:
+                # transformar lista de inteiros para lista de dicts
+                payload['age_children'] = [{'age': age} for age in children_ages]            
 
             # ---------- Requisição externa ----------
             url = f"{client.api_address}/app/reservations/checkAvailability"
@@ -246,9 +275,7 @@ class CheckAvailabilityView(APIView):
                         if isinstance(detail, dict):
                             # Tenta pegar o unit_total, garantindo que é um número
                             try:
-                                unit_total = float(detail.get("unit_total", 0))
-                                # Recalcula o total com base no número de noites
-                                new_total = unit_total * number_of_nights
+                                new_total = float(detail.get("total", 0))
                                 # Atualiza o valor no dicionário
                                 detail['total'] = new_total
                             except (ValueError, TypeError):
@@ -292,6 +319,11 @@ class MakeReservationView(APIView):
                 "to": openapi.Schema(type=openapi.TYPE_STRING, format="date"),
                 "adults": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "children": openapi.Schema(type=openapi.TYPE_INTEGER),
+                'children_age': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    description='Idades das crianças, se houver (ex: [3,5,7])',
+                    items=openapi.Items(type=openapi.TYPE_INTEGER),
+                ),                
                 "rooms": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "id_fee": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "id_type": openapi.Schema(type=openapi.TYPE_INTEGER),
@@ -358,6 +390,24 @@ class MakeReservationView(APIView):
             for g in guests:
                 if not g.get("document_guest") or not g.get("guest"):
                     return Response({"detail": "Each guest must have name and document"}, status=400)
+                
+            # --- Validação children_age ---
+            children_count = int(data.get('children', 0))
+            children_age = data.get('children_age', [])
+
+            # Se há crianças, verificar se as idades foram informadas corretamente
+            if children_count > 0:
+                if not isinstance(children_age, list):
+                    return Response({'detail': 'children_age must be a list of ages (e.g. [3,5,7])'}, status=400)
+                if len(children_age) != children_count:
+                    return Response({'detail': f'children_age must contain exactly {children_count} items'}, status=400)
+                for age in children_age:
+                    if not isinstance(age, int) or age < 0:
+                        return Response({'detail': 'Each child age must be a positive integer'}, status=400)
+            else:
+                # Se não há crianças, o campo children_age deve estar ausente ou vazio
+                if children_age:
+                    return Response({'detail': 'children_age should be empty when children = 0'}, status=400)                 
 
             payload = data.copy()
             payload["token"] = client.api_token
