@@ -22,6 +22,8 @@ class Client(models.Model):
     api_address = models.CharField(max_length=255, blank=True)
     observation = models.TextField(blank=True)
     installation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    information_basic = models.TextField(blank=True)
+    prompt_ai = models.TextField(blank=True)
     monthly_fee = models.DecimalField(max_digits=10, decimal_places=2)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clients_created', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

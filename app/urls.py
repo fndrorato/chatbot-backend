@@ -30,6 +30,7 @@ urlpatterns = [
     
     path('admin/', admin.site.urls),
     
+    path('api/v1/clients/', include('clients.urls', namespace='clients')),
     path('api/v1/chats/', include('chats.urls', namespace='chats')),
     path('api/v1/systems/', include('systems.urls', namespace='systems')), 
 ]
