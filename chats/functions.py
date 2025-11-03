@@ -16,8 +16,6 @@ def get_chat_finished(chat_log):
     if not isinstance(chat_log, str):
         return "Invalid chat log format. Expected a string."
 
-    # Endpoint da OpenAI
-    print(chat_log)
     # OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     OPENAI_API_KEY = config('OPENAI_API_KEY')
     if not OPENAI_API_KEY:
@@ -47,7 +45,6 @@ def get_chat_finished(chat_log):
         "max_tokens": 5    # garante que só venha 'true' ou 'false'
     }
 
-    print("Enviando para OpenAI:", chat_log)
     response = requests.post(url, headers=headers, json=payload)
 
     if response.status_code == 200:

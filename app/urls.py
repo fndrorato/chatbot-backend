@@ -32,7 +32,7 @@ urlpatterns = [
     
     path('api/v1/clients/', include('clients.urls', namespace='clients')),
     path('api/v1/chats/', include('chats.urls', namespace='chats')),
-    path('api/v1/systems/', include('systems.urls', namespace='systems')), 
+    path('api/', include('systems.urls', namespace='systems')), 
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
