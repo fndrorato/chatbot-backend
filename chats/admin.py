@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Q
 from chats.models import Chat, Message
 from chats.resources import MessageResource, ChatResource
 from import_export.admin import ImportExportModelAdmin
@@ -15,22 +16,29 @@ class ChatAdmin(ImportExportModelAdmin):
 class MessageAdmin(ImportExportModelAdmin):
     resource_class = MessageResource
     list_display = ('id', 'contact_id', 'timestamp')
-    
-    # ADICIONADO: Pesquisa por texto dentro dos campos de conteúdo
-    search_fields = (
-        'contact_id',
-        'content_input',   
-        'content_output',
-    )
-    
-    # REMOVIDO: 'content_input' e 'content_output' daqui, pois são campos de texto longo
-    list_filter = (
-        'timestamp', 
-        'contact_id', 
-        'origin',
-        'content_input',   
-        'content_output',
-        'client', 
-        'chat' 
-    )
     raw_id_fields = ('client', 'origin')
+
+    # Campos de filtro — sem content_input/output
+    list_filter = ('timestamp', 'contact_id', 'origin', 'client', 'chat')
+
+    # Campos pesquisáveis — apenas contact_id
+    search_fields = ('contact_id',)
+
+    # Adiciona busca customizada no conteúdo
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Permite buscar também dentro de content_input e content_output
+        sem precisar indexar diretamente esses campos (evita lentidão).
+        """
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        if search_term:
+            queryset |= self.model.objects.filter(
+                Q(content_input__icontains=search_term) |
+                Q(content_output__icontains=search_term)
+            )
+
+        return queryset, use_distinct
+
+    # Exibe timestamp no formulário de detalhes (readonly)
+    readonly_fields = ('timestamp',)
