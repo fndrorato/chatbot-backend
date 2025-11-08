@@ -1,6 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from systems.models import LogIntegration, HotelRooms
+from systems.models import LogIntegration, HotelRooms, LogApiSystem
 from systems.resources import LogIntegrationResource 
 
 @admin.register(LogIntegration)
@@ -25,3 +25,14 @@ class HotelRoomsAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     ordering = ('-created_at',)
 
+@admin.register(LogApiSystem)
+class LogApiSystemAdmin(admin.ModelAdmin):
+    list_display = ('client_id', 'origin', 'status_message', 'created_at')
+    search_fields = (
+        'client_id__name',
+        'origin',
+        'content__icontains',
+        'status_message',
+    )
+    list_filter = ('created_at',)
+    ordering = ('-created_at',)

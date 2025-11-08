@@ -5,13 +5,15 @@ import time
 from clients.models import Client
 from common.utils import parse_int
 from datetime import datetime, date
+from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from systems.models import LogIntegration, HotelRooms
+from systems.models import LogIntegration, HotelRooms, ContextCategory, SystemPrompt, LogApiSystem
 from systems.hotel import reservations
+from systems.utils import log_received_json
 
 
 logger = logging.getLogger(__name__)
@@ -44,10 +46,9 @@ class CheckAvailabilityView(APIView):
                 'rooms': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'origin': openapi.Schema(type=openapi.TYPE_STRING),
                 'children_age': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    description='Idades das crianças, se houver (ex: [3,5,7])',
-                    items=openapi.Items(type=openapi.TYPE_INTEGER),
-                ),                
+                    type=openapi.TYPE_STRING, # Alterado de TYPE_ARRAY para TYPE_STRING
+                    description='Idades das crianças, se houver, separadas por vírgula (ex: "3,5,7")',
+                ),             
             }
         ),
         responses={
@@ -74,46 +75,118 @@ class CheckAvailabilityView(APIView):
 
             # ---------- Validação do body ----------
             data = request.data
+            
+            # 1. CRIA O LOG INICIALMENTE COM UM STATUS TEMPORÁRIO
+            log_entry = log_received_json(
+                client_instance=client, 
+                data=data, 
+                origin_name='API_Hotel_Validation',
+                status_message='Pending Validation'
+            )
+            
             try:
                 from_date = datetime.strptime(data.get('from'), '%Y-%m-%d').date()
                 to_date = datetime.strptime(data.get('to'), '%Y-%m-%d').date()
                 today = date.today()
                 if from_date < today:
+                    log_entry.status_message = "ERROR: From date must be today or in the future"
+                    log_entry.save()
                     return Response({'detail': 'From date must be today or in the future'}, status=400)
                 if to_date <= from_date:
+                    log_entry.status_message = "ERROR: To date must be after from date"
+                    log_entry.save()
                     return Response({'detail': 'To date must be after from date'}, status=400)
             except Exception:
+                log_entry.status_message = "ERROR: Invalid date format. Use YYYY-MM-DD"
+                log_entry.save()
                 return Response({'detail': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
 
             if int(data.get('adults', 0)) <= 0:
+                log_entry.status_message = "ERROR: Adults must be greater than 0"
+                log_entry.save()
                 return Response({'detail': 'Adults must be greater than 0'}, status=400)
             if int(data.get('children', 0)) < 0:
-                print(f'Children: {data.get("children")}')
+                log_entry.status_message = "ERROR: Children must be 0 or greater"
+                log_entry.save()
                 return Response({'detail': 'Children must be 0 or greater'}, status=400)
             if int(data.get('rooms', 0)) < 0:
+                log_entry.status_message = "ERROR: Rooms must be greater than 0"
+                log_entry.save()
                 return Response({'detail': 'Rooms must be greater than 0'}, status=400)
             
-            # --- Validação children_age ---
+            # --- Validação children_age (Versão Atualizada) ---
             children_count = int(data.get('children', 0))
-            children_age = data.get('children_age', [])
+            children_age_input = data.get('children_age') # Campo original (pode ser string '2,10', lista, ou None)
+            children_ages = [] # A lista final de inteiros que você usará no payload
+
+            error_message = None
+
+            if children_count > 0:
+                if not children_age_input:
+                    error_message = 'children_age is required when children > 0'
+                elif isinstance(children_age_input, str):
+                    try:
+                        # Tenta dividir a string e converter para inteiros
+                        age_strings = [a.strip() for a in children_age_input.split(',') if a.strip()]
+                        children_ages = [int(age) for age in age_strings]
+                    except ValueError:
+                        error_message = 'Invalid children_age format. Must be a comma-separated string of integers (e.g., "2,10")'
+                elif isinstance(children_age_input, list):
+                    # Mantenha o suporte se for passado acidentalmente como lista, mas garanta que são inteiros
+                    try:
+                        children_ages = [int(age) for age in children_age_input]
+                    except ValueError:
+                        error_message = 'Each child age in the list must be an integer'
+                else:
+                    error_message = 'children_age must be a string (e.g., "2,10")'
+
+                # Verifica se a contagem de idades corresponde à contagem de crianças
+                if not error_message and len(children_ages) != children_count:
+                    error_message = f'children_age must contain exactly {children_count} ages, but found {len(children_ages)}'
+                    
+                # Verifica se todas as idades são válidas
+                if not error_message:
+                    for age in children_ages:
+                        if age < 0:
+                            error_message = 'Each child age must be a positive integer'
+                            break
+                            
+            elif children_count == 0:
+                # Se não há crianças, o campo children_age deve estar ausente ou vazio
+                if children_age_input and (isinstance(children_age_input, str) and children_age_input.strip() != '' or children_age_input):
+                    error_message = 'children_age should be empty when children = 0'
+
+            # Tratamento do erro (se houver)
+            if error_message:
+                log_entry.status_message = f"ERROR: {error_message}"
+                log_entry.save()
+                return Response({'detail': error_message}, status=400)
 
             # Se há crianças, verificar se as idades foram informadas corretamente
             if children_count > 0:
-                if not isinstance(children_age, list):
+                if not isinstance(children_ages, list):
+                    log_entry.status_message = "ERROR: children_age must be a list of ages"
+                    log_entry.save()
                     return Response({'detail': 'children_age must be a list of ages (e.g. [3,5,7])'}, status=400)
-                if len(children_age) != children_count:
+                if len(children_ages) != children_count:
+                    log_entry.status_message = f"ERROR: children_age must contain exactly {children_count} items"
+                    log_entry.save()
                     return Response({'detail': f'children_age must contain exactly {children_count} items'}, status=400)
-                for age in children_age:
+                for age in children_ages:
                     if not isinstance(age, int) or age < 0:
+                        log_entry.status_message = "ERROR: Each child age must be a positive integer"
+                        log_entry.save()
                         return Response({'detail': 'Each child age must be a positive integer'}, status=400)
             else:
                 # Se não há crianças, o campo children_age deve estar ausente ou vazio
-                if children_age:
+                if children_ages:
+                    log_entry.status_message = "ERROR: children_age should be empty when children = 0"
+                    log_entry.save()
                     return Response({'detail': 'children_age should be empty when children = 0'}, status=400)            
 
             origin = data.get('origin')
             contact_id = request.data.get('contact_id')
-            children_ages = data.get('children_age', [])
+
             if not contact_id:
                 contact_id = 'unknown'
 
@@ -142,6 +215,8 @@ class CheckAvailabilityView(APIView):
                     client_id=client, origin=origin, to=url, content=payload, contact_id=contact_id,
                     response={'detail': 'timeout'}, status_http=504, response_time=elapsed
                 )
+                log_entry.status_message = "ERROR: Upstream timeout"
+                log_entry.save()
                 return Response({'detail': 'Upstream timeout'}, status=504)
             except requests.RequestException as ex:
                 elapsed = round(time.monotonic() - start_time, 3)
@@ -149,6 +224,8 @@ class CheckAvailabilityView(APIView):
                     client_id=client, origin=origin, to=url, content=payload, contact_id=contact_id,
                     response={'detail': str(ex)}, status_http=502, response_time=elapsed
                 )
+                log_entry.status_message = f"ERROR: Upstream error - {str(ex)}"
+                log_entry.save()
                 return Response({'detail': 'Upstream error', 'error': str(ex)}, status=502)
 
             elapsed = round(time.monotonic() - start_time, 3)
@@ -291,6 +368,14 @@ class CheckAvailabilityView(APIView):
             return Response({"availability": cleaned, "status": "OK"}, status=200)
 
         except Exception as e:
+            log_entry = log_received_json(
+                client_instance=client, 
+                data=data, 
+                origin_name='API_Hotel_Validation',
+                status_message='Pending Validation'
+            )            
+            log_entry.status_message = f"ERROR: {str(e)}"
+            log_entry.save()
             logger.exception("Erro ao verificar disponibilidade")
             return Response({"detail": str(e)}, status=500)
 
@@ -352,46 +437,116 @@ class CheckAvailabilityAveragePerNightView(APIView):
 
             # ---------- Validação do body ----------
             data = request.data
+            # 1. CRIA O LOG INICIALMENTE COM UM STATUS TEMPORÁRIO
+            log_entry = log_received_json(
+                client_instance=client, 
+                data=data, 
+                origin_name='API_Hotel_Validation',
+                status_message='Pending Validation'
+            )            
             try:
                 from_date = datetime.strptime(data.get('from'), '%Y-%m-%d').date()
                 to_date = datetime.strptime(data.get('to'), '%Y-%m-%d').date()
                 today = date.today()
                 if from_date < today:
+                    log_entry.status_message = "ERROR: From date must be today or in the future"
+                    log_entry.save()
                     return Response({'detail': 'From date must be today or in the future'}, status=400)
                 if to_date <= from_date:
+                    log_entry.status_message = "ERROR: To date must be after from date"
+                    log_entry.save()
                     return Response({'detail': 'To date must be after from date'}, status=400)
             except Exception:
+                log_entry.status_message = "ERROR: Invalid date format. Use YYYY-MM-DD"
+                log_entry.save()
                 return Response({'detail': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
 
             if int(data.get('adults', 0)) <= 0:
+                log_entry.status_message = "ERROR: Adults must be greater than 0"
+                log_entry.save()
                 return Response({'detail': 'Adults must be greater than 0'}, status=400)
             if int(data.get('children', 0)) < 0:
-                print(f'Children: {data.get("children")}')
+                log_entry.status_message = "ERROR: Children must be 0 or greater"
+                log_entry.save()
                 return Response({'detail': 'Children must be 0 or greater'}, status=400)
             if int(data.get('rooms', 0)) < 0:
+                log_entry.status_message = "ERROR: Rooms must be greater than 0"
+                log_entry.save()
                 return Response({'detail': 'Rooms must be greater than 0'}, status=400)
             
-            # --- Validação children_age ---
+            # --- Validação children_age (Versão Atualizada) ---
             children_count = int(data.get('children', 0))
-            children_age = data.get('children_age', [])
+            children_age_input = data.get('children_age') # Campo original (pode ser string '2,10', lista, ou None)
+            children_ages = [] # A lista final de inteiros que você usará no payload
+
+            error_message = None
+
+            if children_count > 0:
+                if not children_age_input:
+                    error_message = 'children_age is required when children > 0'
+                elif isinstance(children_age_input, str):
+                    try:
+                        # Tenta dividir a string e converter para inteiros
+                        age_strings = [a.strip() for a in children_age_input.split(',') if a.strip()]
+                        children_ages = [int(age) for age in age_strings]
+                    except ValueError:
+                        error_message = 'Invalid children_age format. Must be a comma-separated string of integers (e.g., "2,10")'
+                elif isinstance(children_age_input, list):
+                    # Mantenha o suporte se for passado acidentalmente como lista, mas garanta que são inteiros
+                    try:
+                        children_ages = [int(age) for age in children_age_input]
+                    except ValueError:
+                        error_message = 'Each child age in the list must be an integer'
+                else:
+                    error_message = 'children_age must be a string (e.g., "2,10")'
+
+                # Verifica se a contagem de idades corresponde à contagem de crianças
+                if not error_message and len(children_ages) != children_count:
+                    error_message = f'children_age must contain exactly {children_count} ages, but found {len(children_ages)}'
+                    
+                # Verifica se todas as idades são válidas
+                if not error_message:
+                    for age in children_ages:
+                        if age < 0:
+                            error_message = 'Each child age must be a positive integer'
+                            break
+                            
+            elif children_count == 0:
+                # Se não há crianças, o campo children_age deve estar ausente ou vazio
+                if children_age_input and (isinstance(children_age_input, str) and children_age_input.strip() != '' or children_age_input):
+                    error_message = 'children_age should be empty when children = 0'
+
+            # Tratamento do erro (se houver)
+            if error_message:
+                log_entry.status_message = f"ERROR: {error_message}"
+                log_entry.save()
+                return Response({'detail': error_message}, status=400)
 
             # Se há crianças, verificar se as idades foram informadas corretamente
             if children_count > 0:
-                if not isinstance(children_age, list):
+                if not isinstance(children_ages, list):
+                    log_entry.status_message = "ERROR: children_age must be a list of ages"
+                    log_entry.save()
                     return Response({'detail': 'children_age must be a list of ages (e.g. [3,5,7])'}, status=400)
-                if len(children_age) != children_count:
+                if len(children_ages) != children_count:
+                    log_entry.status_message = f"ERROR: children_age must contain exactly {children_count} items"
+                    log_entry.save()
                     return Response({'detail': f'children_age must contain exactly {children_count} items'}, status=400)
-                for age in children_age:
+                for age in children_ages:
                     if not isinstance(age, int) or age < 0:
+                        log_entry.status_message = "ERROR: Each child age must be a positive integer"
+                        log_entry.save()
                         return Response({'detail': 'Each child age must be a positive integer'}, status=400)
             else:
                 # Se não há crianças, o campo children_age deve estar ausente ou vazio
-                if children_age:
+                if children_ages:
+                    log_entry.status_message = "ERROR: children_age should be empty when children = 0"
+                    log_entry.save()
                     return Response({'detail': 'children_age should be empty when children = 0'}, status=400)            
 
             origin = data.get('origin')
             contact_id = request.data.get('contact_id')
-            children_ages = data.get('children_age', [])
+
             if not contact_id:
                 contact_id = 'unknown'
 
@@ -1338,4 +1493,326 @@ class LogIntegrationView(APIView):
 
         except Exception as e:
             logger.exception("Erro ao gravar log de integração")
+            return Response({"detail": str(e)}, status=500)
+
+
+
+
+class GetRelevantContextView(APIView):
+    """
+    Retorna contexto relevante baseado na mensagem do usuário
+    usando busca por palavras-chave (RAG leve)
+    """
+    authentication_classes = []
+    permission_classes = []
+    
+    @swagger_auto_schema(
+        operation_description="Busca contexto relevante para a mensagem",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {token}",
+                required=True
+            )
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'message': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Mensagem do usuário'
+                ),
+                'max_contexts': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description='Máximo de contextos a retornar (padrão: 3)',
+                    default=3
+                ),
+                'categories': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING),
+                    description='Categorias específicas (opcional)',
+                )
+            },
+            required=['message']
+        ),
+        responses={
+            200: "Contexto relevante retornado",
+            403: "Token inválido"
+        }
+    )
+    def post(self, request):
+        try:
+            # Autenticação
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Authorization header inválido"}, status=403)
+            
+            token = auth_header.split(" ")[1]
+            client = Client.objects.filter(token=token, active=True).first()
+            if not client:
+                return Response({"detail": "Token inválido"}, status=403)
+            
+            # Parâmetros
+            message = request.data.get('message', '').lower()
+            max_contexts = request.data.get('max_contexts', 3)
+            specific_categories = request.data.get('categories', [])
+            
+            if not message:
+                return Response({"detail": "Campo 'message' é obrigatório"}, status=400)
+            
+            # Buscar contextos relevantes
+            contexts = self._search_relevant_contexts(
+                client, 
+                message, 
+                max_contexts,
+                specific_categories
+            )
+            
+            # Formatar resposta
+            formatted_context = "\n\n---\n\n".join([c['content'] for c in contexts])
+            
+            return Response({
+                "context": formatted_context,
+                "contexts_used": [c['category'] for c in contexts],
+                "total_contexts": len(contexts)
+            }, status=200)
+            
+        except Exception as e:
+            logger.exception("Erro ao buscar contexto")
+            return Response({"detail": str(e)}, status=500)
+    
+    def _search_relevant_contexts(self, client, message, max_contexts, specific_categories):
+        """
+        Busca contextos relevantes usando palavras-chave
+        """
+        # Palavras da mensagem
+        message_words = set(message.split())
+        
+        # Buscar todos os contextos ativos do cliente
+        query = ContextCategory.objects.filter(client=client, active=True)
+        
+        # Se categorias específicas foram pedidas
+        if specific_categories:
+            query = query.filter(category__in=specific_categories)
+        
+        contexts = query.all()
+        
+        # Calcular score de relevância para cada contexto
+        scored_contexts = []
+        for ctx in contexts:
+            score = 0
+            keywords = ctx.keywords or []
+            
+            # Pontuação por palavra-chave encontrada
+            for keyword in keywords:
+                if keyword.lower() in message:
+                    score += 2  # Match exato vale mais
+                elif any(keyword.lower() in word for word in message_words):
+                    score += 1  # Match parcial
+            
+            # Adiciona prioridade do contexto
+            score += ctx.priority
+            
+            if score > 0:
+                scored_contexts.append({
+                    'category': ctx.category,
+                    'content': ctx.content,
+                    'score': score
+                })
+        
+        # Ordenar por score e pegar os top
+        scored_contexts.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Se não encontrou nenhum, retorna os mais importantes (por priority)
+        if not scored_contexts:
+            fallback = contexts.order_by('-priority')[:max_contexts]
+            return [{'category': c.category, 'content': c.content} for c in fallback]
+        
+        return scored_contexts[:max_contexts]
+
+
+class GetSystemPromptView(APIView):
+    """
+    Retorna o prompt base do sistema
+    """
+    authentication_classes = []
+    permission_classes = []
+    
+    @swagger_auto_schema(
+        operation_description="Retorna o prompt base ativo do cliente",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {token}",
+                required=True
+            )
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'prompt_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Nome do prompt (opcional, retorna o principal se vazio)',
+                    default='main'
+                )
+            }
+        ),
+        responses={
+            200: "Prompt retornado",
+            403: "Token inválido",
+            404: "Prompt não encontrado"
+        }
+    )
+    def post(self, request):
+        try:
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Authorization header inválido"}, status=403)
+            
+            token = auth_header.split(" ")[1]
+            client = Client.objects.filter(token=token, active=True).first()
+            if not client:
+                return Response({"detail": "Token inválido"}, status=403)
+            
+            prompt_name = request.data.get('prompt_name', 'main')
+            
+            # Buscar prompt ativo
+            prompt = SystemPrompt.objects.filter(
+                client=client,
+                name=prompt_name,
+                is_active=True
+            ).order_by('-updated_at').first()
+            
+            if not prompt:
+                return Response({"detail": "Prompt não encontrado"}, status=404)
+            
+            return Response({
+                "prompt": prompt.prompt_text,
+                "version": prompt.version,
+                "name": prompt.name
+            }, status=200)
+            
+        except Exception as e:
+            logger.exception("Erro ao buscar prompt")
+            return Response({"detail": str(e)}, status=500)
+
+
+class ManageContextView(APIView):
+    """
+    CRUD para gerenciar contextos
+    """
+    authentication_classes = []
+    permission_classes = []
+    
+    @swagger_auto_schema(
+        operation_description="Cria ou atualiza um contexto",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {token}",
+                required=True
+            )
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'category': openapi.Schema(type=openapi.TYPE_STRING),
+                'content': openapi.Schema(type=openapi.TYPE_STRING),
+                'keywords': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING)
+                ),
+                'priority': openapi.Schema(type=openapi.TYPE_INTEGER, default=0)
+            },
+            required=['category', 'content']
+        )
+    )
+    def post(self, request):
+        """Cria ou atualiza contexto"""
+        try:
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Authorization header inválido"}, status=403)
+            
+            token = auth_header.split(" ")[1]
+            client = Client.objects.filter(token=token, active=True).first()
+            if not client:
+                return Response({"detail": "Token inválido"}, status=403)
+            
+            category = request.data.get('category')
+            content = request.data.get('content')
+            keywords = request.data.get('keywords', [])
+            priority = request.data.get('priority', 0)
+            
+            if not category or not content:
+                return Response({"detail": "category e content são obrigatórios"}, status=400)
+            
+            # Update or Create
+            context, created = ContextCategory.objects.update_or_create(
+                client=client,
+                category=category,
+                defaults={
+                    'content': content,
+                    'keywords': keywords,
+                    'priority': priority,
+                    'active': True
+                }
+            )
+            
+            return Response({
+                "message": "Contexto criado" if created else "Contexto atualizado",
+                "category": context.category,
+                "id": context.id
+            }, status=201 if created else 200)
+            
+        except Exception as e:
+            logger.exception("Erro ao gerenciar contexto")
+            return Response({"detail": str(e)}, status=500)
+    
+    @swagger_auto_schema(
+        operation_description="Lista todos os contextos do cliente",
+        manual_parameters=[
+            openapi.Parameter(
+                name='Authorization',
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                description="Bearer {token}",
+                required=True
+            )
+        ]
+    )
+    def get(self, request):
+        """Lista contextos"""
+        try:
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Authorization header inválido"}, status=403)
+            
+            token = auth_header.split(" ")[1]
+            client = Client.objects.filter(token=token, active=True).first()
+            if not client:
+                return Response({"detail": "Token inválido"}, status=403)
+            
+            contexts = ContextCategory.objects.filter(client=client, active=True)
+            
+            return Response({
+                "contexts": [
+                    {
+                        "id": c.id,
+                        "category": c.category,
+                        "content": c.content,
+                        "keywords": c.keywords,
+                        "priority": c.priority
+                    } for c in contexts
+                ]
+            }, status=200)
+            
+        except Exception as e:
+            logger.exception("Erro ao listar contextos")
             return Response({"detail": str(e)}, status=500)
