@@ -364,7 +364,9 @@ class CheckAvailabilityView(APIView):
                         "type": r.get("type"),
                         "details": details
                     })
-
+            
+            log_entry.status_message = "SUCCESS"
+            log_entry.save()
             return Response({"availability": cleaned, "status": "OK"}, status=200)
 
         except Exception as e:
@@ -407,10 +409,9 @@ class CheckAvailabilityAveragePerNightView(APIView):
                 'rooms': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'origin': openapi.Schema(type=openapi.TYPE_STRING),
                 'children_age': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    description='Idades das crianças, se houver (ex: [3,5,7])',
-                    items=openapi.Items(type=openapi.TYPE_INTEGER),
-                ),                
+                    type=openapi.TYPE_STRING, # Alterado de TYPE_ARRAY para TYPE_STRING
+                    description='Idades das crianças, se houver, separadas por vírgula (ex: "3,5,7")',
+                ),                 
             }
         ),
         responses={
@@ -722,9 +723,19 @@ class CheckAvailabilityAveragePerNightView(APIView):
                         "details": details
                     })
 
+            log_entry.status_message = "SUCCESS"
+            log_entry.save()
             return Response({"availability": cleaned, "status": "OK"}, status=200)
 
         except Exception as e:
+            log_entry = log_received_json(
+                client_instance=client, 
+                data=data, 
+                origin_name='API_Hotel_Validation',
+                status_message='Pending Validation'
+            )            
+            log_entry.status_message = f"ERROR: {str(e)}"
+            log_entry.save()
             logger.exception("Erro ao verificar disponibilidade")
             return Response({"detail": str(e)}, status=500)
 
@@ -753,10 +764,9 @@ class MakeReservationView(APIView):
                 "adults": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "children": openapi.Schema(type=openapi.TYPE_INTEGER),
                 'children_age': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    description='Idades das crianças, se houver (ex: [3,5,7])',
-                    items=openapi.Items(type=openapi.TYPE_INTEGER),
-                ),                
+                    type=openapi.TYPE_STRING, # Alterado de TYPE_ARRAY para TYPE_STRING
+                    description='Idades das crianças, se houver, separadas por vírgula (ex: "3,5,7")',
+                ),              
                 "rooms": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "id_fee": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "id_type": openapi.Schema(type=openapi.TYPE_INTEGER),
@@ -797,6 +807,13 @@ class MakeReservationView(APIView):
                 return Response({"detail": "Unsupported client type"}, status=400)
 
             data = request.data
+            # 1. CRIA O LOG INICIALMENTE COM UM STATUS TEMPORÁRIO
+            log_entry = log_received_json(
+                client_instance=client, 
+                data=data, 
+                origin_name='API_Hotel_Validation',
+                status_message='Pending Validation'
+            )             
             from_date = datetime.strptime(data.get("from"), "%Y-%m-%d").date()
             to_date = datetime.strptime(data.get("to"), "%Y-%m-%d").date()
             today = date.today()
@@ -824,22 +841,74 @@ class MakeReservationView(APIView):
                 if not g.get("document_guest") or not g.get("guest"):
                     return Response({"detail": "Each guest must have name and document"}, status=400)
                 
-            # --- Validação children_age ---
+            # --- Validação children_age (Versão Atualizada) ---
             children_count = int(data.get('children', 0))
-            children_age = data.get('children_age', [])
+            children_age_input = data.get('children_age') # Campo original (pode ser string '2,10', lista, ou None)
+            children_ages = [] # A lista final de inteiros que você usará no payload
+
+            error_message = None
+
+            if children_count > 0:
+                if not children_age_input:
+                    error_message = 'children_age is required when children > 0'
+                elif isinstance(children_age_input, str):
+                    try:
+                        # Tenta dividir a string e converter para inteiros
+                        age_strings = [a.strip() for a in children_age_input.split(',') if a.strip()]
+                        children_ages = [int(age) for age in age_strings]
+                    except ValueError:
+                        error_message = 'Invalid children_age format. Must be a comma-separated string of integers (e.g., "2,10")'
+                elif isinstance(children_age_input, list):
+                    # Mantenha o suporte se for passado acidentalmente como lista, mas garanta que são inteiros
+                    try:
+                        children_ages = [int(age) for age in children_age_input]
+                    except ValueError:
+                        error_message = 'Each child age in the list must be an integer'
+                else:
+                    error_message = 'children_age must be a string (e.g., "2,10")'
+
+                # Verifica se a contagem de idades corresponde à contagem de crianças
+                if not error_message and len(children_ages) != children_count:
+                    error_message = f'children_age must contain exactly {children_count} ages, but found {len(children_ages)}'
+                    
+                # Verifica se todas as idades são válidas
+                if not error_message:
+                    for age in children_ages:
+                        if age < 0:
+                            error_message = 'Each child age must be a positive integer'
+                            break
+                            
+            elif children_count == 0:
+                # Se não há crianças, o campo children_age deve estar ausente ou vazio
+                if children_age_input and (isinstance(children_age_input, str) and children_age_input.strip() != '' or children_age_input):
+                    error_message = 'children_age should be empty when children = 0'
+
+            # Tratamento do erro (se houver)
+            if error_message:
+                log_entry.status_message = f"ERROR: {error_message}"
+                log_entry.save()
+                return Response({'detail': error_message}, status=400)
 
             # Se há crianças, verificar se as idades foram informadas corretamente
             if children_count > 0:
-                if not isinstance(children_age, list):
+                if not isinstance(children_ages, list):
+                    log_entry.status_message = "ERROR: children_age must be a list of ages"
+                    log_entry.save()
                     return Response({'detail': 'children_age must be a list of ages (e.g. [3,5,7])'}, status=400)
-                if len(children_age) != children_count:
+                if len(children_ages) != children_count:
+                    log_entry.status_message = f"ERROR: children_age must contain exactly {children_count} items"
+                    log_entry.save()
                     return Response({'detail': f'children_age must contain exactly {children_count} items'}, status=400)
-                for age in children_age:
+                for age in children_ages:
                     if not isinstance(age, int) or age < 0:
+                        log_entry.status_message = "ERROR: Each child age must be a positive integer"
+                        log_entry.save()
                         return Response({'detail': 'Each child age must be a positive integer'}, status=400)
             else:
                 # Se não há crianças, o campo children_age deve estar ausente ou vazio
-                if children_age:
+                if children_ages:
+                    log_entry.status_message = "ERROR: children_age should be empty when children = 0"
+                    log_entry.save()
                     return Response({'detail': 'children_age should be empty when children = 0'}, status=400)                 
 
             payload = data.copy()
@@ -853,7 +922,7 @@ class MakeReservationView(APIView):
 
             response_data = response.json()
             
-            contact_id = request.data.get('contact_id')
+            contact_id = data.get('contact_id')
             if not contact_id:
                 contact_id = 'unknown'
 
@@ -873,9 +942,19 @@ class MakeReservationView(APIView):
             except (KeyError, IndexError, TypeError):
                 msg = "Reserva realizada com sucesso."
 
+            log_entry.status_message = "SUCCESS"
+            log_entry.save()
             return Response({"message": msg}, status=response.status_code)
 
         except Exception as e:
+            log_entry = log_received_json(
+                client_instance=client, 
+                data=data, 
+                origin_name='API_Hotel_Validation',
+                status_message='Pending Validation'
+            )            
+            log_entry.status_message = f"ERROR: {str(e)}"
+            log_entry.save()            
             logger.exception("Erro ao realizar reserva")
             return Response({"detail": str(e)}, status=500)
 
