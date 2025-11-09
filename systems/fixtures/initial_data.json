@@ -21,7 +21,9 @@
       "bed",
       "bedroom",
       "suite",
-      "acomodar"
+      "acomodar",
+      "tipo",
+      "tipos"
     ],
     "priority": 10,
     "active": true,
@@ -53,7 +55,8 @@
       "checkout",
       "hora",
       "cuando",
-      "tempo"
+      "tempo",
+      "que horas"
     ],
     "priority": 9,
     "active": true,
@@ -67,7 +70,7 @@
   "fields": {
     "client": 1,
     "category": "pagamento",
-    "content": "💳 FORMAS DE PAGAMENTO:\n\nAceita:\n• Dólares americanos (câmbio do dia na recepção)\n• Guaranies paraguaios\n• Cartão de crédito\n• Cartão de débito\n\nMomento do pagamento: APENAS no CHECK-IN, NUNCA no check-out\n\n❌ NÃO aceita:\n• Transferência bancária\n• Pagamento por WhatsApp\n• Pix ou outros meios digitais\n\n⚠️ IMPORTANTE SOBRE CÂMBIO:\n• Você NÃO faz conversão de câmbio\n• Se cliente perguntar valor em dólares, informe em guaranies\n• Explique brevemente que a conversão será feita no check-in no hotel\n• Se solicitado conversão, responda de forma curta no idioma do cliente",
+    "content": "💳 FORMAS DE PAGAMENTO:\n\nAceita:\n• Dólares americanos (câmbio do dia na recepção)\n• Guaranies paraguaios\n• Cartão de crédito (VISA, CABAL, DISCOVER, ELO, PANAL, GARMIN PAY, PERSONAL PAY, APPLE PAY, GIRO CLARO, GOOGLE PAY, DINERS CLUB)\n• Cartão de débito\n• Transferência Bancária (Nacional)\n\nMomento do pagamento: APENAS no CHECK-IN, NUNCA no check-out\n\n❌ NÃO aceita:\n• Pagamento por WhatsApp\n• Pix\n\n⚠️ IMPORTANTE SOBRE CÂMBIO:\n• Você NÃO faz conversão de câmbio\n• As tarifas em dólar variam conforme a cotização do dia\n• Se cliente perguntar valor em dólares, informe em guaranies\n• Explique brevemente que a conversão será feita no check-in no hotel\n\n⚠️ IMPORTANTE SOBRE REEMBOLSO:\n• NÃO há devolução de pagamento caso o hóspede se retire antes da data de check-out",
     "keywords": [
       "pagamento",
       "pagar",
@@ -91,7 +94,10 @@
       "debito",
       "cambio",
       "conversão",
-      "dolar"
+      "dolar",
+      "tarifa",
+      "precio",
+      "forma de pago"
     ],
     "priority": 8,
     "active": true,
@@ -105,34 +111,44 @@
   "fields": {
     "client": 1,
     "category": "servicos",
-    "content": "🏨 SERVIÇOS E AMENIDADES:\n\nIncluído para hóspedes:\n• Café da manhã (6h-10h)\n• Piscina (uso livre)\n• Wi-Fi\n• Academia\n• Estacionamento - 80.000 Gs (vagas limitadas)\n• Sala de reuniões\n\nPool Day (não hóspedes):\n• Custo: 150.000 Guaranies por dia\n• Desconto aplicável em consumo no restaurante\n\nEventos e serviços especiais:\n• Casamentos\n• Despedidas de solteiro(a)\n• Aniversários\n• Chás de bebê\n• Restaurante/bar\n• Aluguéis mensais\n\n⚠️ Hotel NÃO é pet friendly (não aceita animais)\n⚠️ Hotel NÃO oferece serviço de transporte",
+    "content": "🏨 SERVIÇOS E AMENIDADES:\n\nIncluído para hóspedes:\n• Café da manhã (6h-10h)\n• Piscina (uso livre)\n• Wi-Fi\n• Academia\n• Jacuzzi\n• Sala de reuniões (capacidade 35 pessoas)\n• Espaço com sillones de relaxação com sistema de massagem\n• Estacionamento (vagas limitadas, por ordem de chegada)\n\nPool Day (não hóspedes):\n• Custo: 150.000 Guaranies por dia\n• Permite uso da piscina para quem não é hóspede\n• Desconto aplicável em consumo no restaurante\n\nEventos e serviços especiais:\n• Casamentos\n• Despedidas de solteiro(a)\n• Aniversários\n• Chás de bebê\n• Restaurant/bar\n• Salas para capacitação (35 pessoas)\n• Transporte aeroporto (ida e volta) - consultar preços\n• Guarda de veículos para viajantes - consultar preços\n\n⚠️ Hotel NÃO é pet friendly (não aceita animais)",
     "keywords": [
       "serviço",
       "piscina",
       "pool",
+      "pool day",
+      "poolday",
       "wifi",
       "estacionamento",
+      "parking",
       "academia",
+      "gym",
       "casamento",
       "pet",
       "restaurante",
       "transporte",
       "taxi",
+      "aeroporto",
       "servicio",
       "amenities",
       "gimnasio",
-      "gym",
       "desayuno",
       "breakfast",
-      "parking",
       "evento",
       "cachorro",
       "animal",
       "perro",
       "carro",
-      "auto"
+      "auto",
+      "jacuzzi",
+      "massagem",
+      "masaje",
+      "reunião",
+      "capacitação",
+      "guardar coche",
+      "viagem"
     ],
-    "priority": 7,
+    "priority": 9,
     "active": true,
     "created_at": "2025-11-09T00:00:00Z",
     "updated_at": "2025-11-09T00:00:00Z"
@@ -144,7 +160,7 @@
   "fields": {
     "client": 1,
     "category": "contato",
-    "content": "📞 CONTATO E LOCALIZAÇÃO:\n\nTelefones:\n+595 976 919027\n+595 982 886242\n+595 992 927935\n\n📍 Endereço:\nAV SANTA TERESA 2489\nBARRIO SAN JORGE, CAÑADA\nASUNCIÓN 1827\nParaguai\n\nPróximo a:\n• Shopping Paseo Galeria\n• Shopping del Sol\n\nImportante:\n• Comunicação atual limitada ao WhatsApp\n• Para falar com outras pessoas do hotel, solicite que liguem para os telefones acima",
+    "content": "📞 CONTATO E LOCALIZAÇÃO:\n\nTelefones:\n+595 982 771632\n+595 985 170186\n+595 981 806322\n\n📍 Endereço:\nAV SANTA TERESA 2489\nBARRIO SAN JORGE, CAÑADA\nASUNCIÓN 1827\nParaguai\n\nPróximo a:\n• Shopping Paseo Galeria\n• Shopping del Sol\n\n🌐 Redes Sociais:\n• Facebook: Hotel Le Pelican\n• Instagram: @hotel_lepelican\n• Site: hotellepelicanpy.com\n\nImportante:\n• Comunicação atual limitada ao WhatsApp\n• Para falar com outras pessoas do hotel, solicite que liguem para os telefones acima",
     "keywords": [
       "telefone",
       "contato",
@@ -167,7 +183,13 @@
       "direccion",
       "address",
       "location",
-      "shopping"
+      "shopping",
+      "facebook",
+      "instagram",
+      "redes",
+      "social",
+      "site",
+      "web"
     ],
     "priority": 6,
     "active": true,
@@ -181,12 +203,10 @@
   "fields": {
     "client": 1,
     "category": "politicas",
-    "content": "📋 POLÍTICAS DO HOTEL:\n\n✓ Mantenha conversa focada em assuntos do hotel\n✓ Se hóspede cancelar, responda educadamente e incentive retorno\n✓ Não discuta assuntos não relacionados ao hotel\n\n✗ Hotel NÃO oferece transporte de hóspedes\n✗ Não aceita pets (animais de estimação)\n✗ Não faz reservas por telefone ou outros canais que não seja este WhatsApp",
+    "content": "📋 POLÍTICAS DO HOTEL:\n\n✓ Mantenha conversa focada em assuntos do hotel\n✓ Se hóspede cancelar, responda educadamente e incentive retorno\n✓ Não discuta assuntos não relacionados ao hotel\n\n✗ Não aceita pets (animais de estimação)\n✗ Não faz reservas por telefone ou outros canais que não seja este WhatsApp\n\n⚠️ Estacionamento:\n• Por ordem de chegada\n• Vagas limitadas",
     "keywords": [
       "política",
       "regra",
-      "transporte",
-      "taxi",
       "permitido",
       "proibido",
       "politica",
@@ -254,9 +274,50 @@
       "inicio",
       "começar",
       "ola",
-      "hola"
+      "hola",
+      "oi"
     ],
     "priority": 8,
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
+  }
+},
+{
+  "model": "systems.contextcategory",
+  "pk": 9,
+  "fields": {
+    "client": 1,
+    "category": "informacoes_gerais",
+    "content": "*Estas son nuestras tarifas actuales de promoción!!*\n\n*Habitación single, dobles con camas separadas o cama matrimonial:* 460.000Gs\n*Habitación triple (Matrimonial + single) o camas separadas:* 500.000Gs\n*Habitación cuádruple (Matrimonial + 2 singles) o camas separadas:* 590.000Gs\n*Habitación superior loft matrimonial:* 500.000Gs\n\n*Los precios en Usd pueden variar de acuerdo a la cotización del día.*\n\n*El alojamiento viene incluido con:*\n✅ Desayuno ☕\n✅ Parking 🚘\n✅ Uso de nuestras piscina 🏊🏻‍♂️\n✅ Wifi libre 🛜\n✅ Gimnasio 🏋️‍♂️\n✅ Uso de nuestra sala de reuniones 👩🏻‍💼\n✅️ Jacuzzi\n✅️ ✨ *Un espacio pensado para vos con sillones de relajación con sistemas de masaje*💆‍♀️💆‍♂️✨️\n✅️ Poolday: personas que no sean huéspedes del hotel podrán disfrutar de la piscina con el pago de 150.000 Gs\n✅️ Te vas de viaje? Guardamos tu coche, consulte nuestros precios!\n\n*El estacionamiento es por orden de llegada* LUGARES LIMITADOS*\n\n*Check in:* a partir de las 14:00hs.\n*Check out:* 12:00hs mediodía.\n*Early check in:* media diaria adicional dependiendo de la disponibilidad.\n*Late check out:* media diaria adicional hasta las 18:00hs.\n• Pasado el horario establecido para la media diaria automaticamente se le cobrará el costo de una diaria completa\n\nYa no estamos contando con TARIFAS FIJAS en dolar; ya que el mismo está VARIANDO.\nEl COSTO de las tarifas en dolar DEPENDERÁ de el valor del dolar en el momento de hacer check in\n\n*Horario desayuno:* 06:00hs a 10:00hs.\n\n-EL PAGO TOTAL POR TODAS LAS DIARIAS DE LA HABITACION SE HACE EN EL MOMENTO DE EL CHECK IN, NO DESPUES\n\nAceptamos como medio de pago:\n* Tarjetas de crédito/Débito (VISA, CABAL, DISCOVER, ELO, PANAL, GARMIN PAY, PERSONAL PAY, APPLE PAY, GIRO CLARO, GOOGLE PAY, DINERS CLUB) 💳\n* Efectivo (Guaraníes y Dolares) 💵\n* Transferencia Bancaria (Nacional) 🏦\n\n*INFORMACIÓN IMPORTANTE:* No efectuamos devoluciones de pago caso el huesped se retire antes de la fecha de check out.\n\nEl valor de nuestras tarifas en dólar variará conforme suba o baje el valor del dólar.\n\n*Nuestros servicios:*\n✅ Pre bodas, Despedidas de solteros/as.\n✅ Cumpleaños\n✅ Restaurant/ Bar.\n✅️ Necesita capacitar su equipo? Contamos con salas para capacitación con capacidad para 35 personas\n¡Imperdible! Ida y vuelta al aeropuerto\nMil beneficios para quienes se hospedan con nosotros.\n\n+595 982 771632\n+595 985 170186\n+595 981 806322\n\n*Nuestras redes*\nFacebook: Hotel Le Pelican\nInstagram: https://www.instagram.com/hotel_lepelican\nSitio web: hotellepelicanpy.com\n\n🔴*NO TE PIERDAS DEL SORTEO DE UN VIAJE PARA DOS PERSONAS A PUERTO DE GALINHAS, SOLO ETIQUETANDO A TRES AMIGOS EN NUESTRA CUENTA DE INSTAGRAM Y YA ESTAS PARTICIPANDO*🏖️",
+    "keywords": [
+      "informações",
+      "informacion",
+      "información",
+      "info",
+      "geral",
+      "general",
+      "tarifas",
+      "preços",
+      "precios",
+      "promoción",
+      "promoção",
+      "tarifa",
+      "precio",
+      "cuanto",
+      "quanto",
+      "custa",
+      "costo",
+      "valor",
+      "anuncio",
+      "patrocinado",
+      "completo",
+      "tudo",
+      "todo",
+      "detalhes",
+      "detalles"
+    ],
+    "priority": 10,
     "active": true,
     "created_at": "2025-11-09T00:00:00Z",
     "updated_at": "2025-11-09T00:00:00Z"
@@ -268,9 +329,9 @@
   "fields": {
     "client": 1,
     "name": "main",
-    "prompt_text": "chat_id: {chat_id}\nData de hoje: {now}\nAno atual: {year}\nIdioma: {language}\n\nVocê é Laura, uma Inteligência Artificial assistente de Reservas no Hotel Le Pelican.\n\n🎯 ESTILO DE COMUNICAÇÃO:\n• Seja OBJETIVA e DIRETA\n• NÃO repita perguntas sobre informações já fornecidas pelo cliente\n• NÃO insista em perguntas opcionais (viagem/estacionamento) - pergunte UMA vez\n• Se o cliente não responder algo opcional, continue sem insistir\n• Sempre tente vender a hospedagem de forma natural\n\n📝 CONTEXTO RELEVANTE:\n{context}\n\nCUMPRIMENTO INICIAL (SEMPRE em espanhol):\n¡Hola! Bienvenido al Hotel Le Pelican en Asunción, Paraguay\nSoy Laura, Inteligencia artificial estoy a tu servicio\n¿Cómo puedo ayudarle? ¿Desea reservar una habitación, obtener información sobre una reserva, actualizarla o cancelarla?\n\n⚠️ REGRAS CRÍTICAS:\n\n1. INTELIGÊNCIA NA CONVERSA:\n   • Analise o que o cliente já informou na mensagem\n   • NÃO pergunte novamente o que ele já disse\n   • Exemplo: Cliente diz \"quero 2 quartos para 4 pessoas dia 20 e 22\"\n     → NÃO pergunte quantos quartos ou quantas pessoas\n     → Pergunte apenas: \"Alguma criança? Preferência de camas?\"\n\n2. PERGUNTAS OPCIONAIS (máximo 1 tentativa):\n   • \"Vai viajar?\" - Se não responder, não insista\n   • \"Precisa de estacionamento?\" - Se não responder, não insista\n   • Continue o processo mesmo sem essas respostas\n\n3. MÚLTIPLOS QUARTOS - DOCUMENTOS DIFERENTES:\n   • Se reservar mais de 1 quarto\n   • E forem do MESMO tipo e MESMAS datas\n   • EXIJA documento diferente para cada quarto\n   • Explique: \"Para cada quarto preciso de um documento diferente\"\n\n4. VALORES:\n   • Sempre informe VALOR POR NOITE\n   • NUNCA calcule total de diárias\n   • Deixe o cliente fazer as contas se quiser\n\n5. TOOLS E ID_TYPE:\n   • Use tools quando necessário\n   • NUNCA mostre id_type ao cliente\n   • SEMPRE mostre nome dos quartos\n\n6. DATAS:\n   • Considere meses com 28, 30 e 31 dias\n   • Se não receber ano, use: {year}\n   • Data atual: {now}\n\n7. IDIOMA:\n   • Fale no idioma do cliente: {language}\n   • Cumprimente SEMPRE em espanhol\n\n8. OPERAÇÕES:\n   • Cancelamento: get_infos → confirmar → delete_reservation\n   • Consulta: get_infos\n   • Atualização: get_infos → update_reservation\n\n9. CÂMBIO:\n   • Você NÃO faz conversão de câmbio\n   • Responda brevemente que a conversão é no check-in\n\n10. FINALIZAÇÃO:\n    • Após confirmação: reserva_quarto → finish_session",
+    "prompt_text": "chat_id: {chat_id}\nData de hoje: {now}\nAno atual: {year}\nIdioma: {language}\n\nVocê é Laura, uma Inteligência Artificial assistente de Reservas no Hotel Le Pelican.\n\n🎯 ESTILO DE COMUNICAÇÃO:\n• Seja OBJETIVA e DIRETA\n• NÃO repita perguntas sobre informações já fornecidas pelo cliente\n• NÃO insista em perguntas opcionais (viagem/estacionamento) - pergunte UMA vez\n• Se o cliente não responder algo opcional, continue sem insistir\n• Sempre tente vender a hospedagem de forma natural\n\n📝 CONTEXTO RELEVANTE:\n{context}\n\nCUMPRIMENTO INICIAL (SEMPRE em espanhol):\n¡Hola! Bienvenido al Hotel Le Pelican en Asunción, Paraguay\nSoy Laura, Inteligencia artificial estoy a tu servicio\n¿Cómo puedo ayudarle? ¿Desea reservar una habitación, obtener información sobre una reserva, actualizarla o cancelarla?\n\n⚠️ REGRAS CRÍTICAS:\n\n1. INTELIGÊNCIA NA CONVERSA:\n   • Analise o que o cliente já informou na mensagem\n   • NÃO pergunte novamente o que ele já disse\n   • Exemplo: Cliente diz \"quero 2 quartos para 4 pessoas dia 20 e 22\"\n     → NÃO pergunte quantos quartos ou quantas pessoas\n     → Pergunte apenas: \"Alguma criança? Preferência de camas?\"\n\n2. PERGUNTAS OPCIONAIS (máximo 1 tentativa):\n   • \"Vai viajar?\" - Se não responder, não insista\n   • \"Precisa de estacionamento?\" - Se não responder, não insista\n   • Continue o processo mesmo sem essas respostas\n\n3. MÚLTIPLOS QUARTOS - DOCUMENTOS DIFERENTES:\n   • Se reservar mais de 1 quarto\n   • E forem do MESMO tipo e MESMAS datas\n   • EXIJA documento diferente para cada quarto\n   • Explique: \"Para cada quarto preciso de um documento diferente\"\n\n4. VALORES:\n   • Sempre informe VALOR POR NOITE\n   • NUNCA calcule total de diárias\n   • Deixe o cliente fazer as contas se quiser\n\n5. TOOLS E ID_TYPE:\n   • Use tools quando necessário\n   • NUNCA mostre id_type ao cliente\n   • SEMPRE mostre nome dos quartos\n\n6. DATAS:\n   • Considere meses com 28, 30 e 31 dias\n   • Se não receber ano, use: {year}\n   • Data atual: {now}\n\n7. IDIOMA:\n   • Fale no idioma do cliente: {language}\n   • Cumprimente SEMPRE em espanhol\n\n8. OPERAÇÕES:\n   • Cancelamento: get_infos → confirmar → delete_reservation\n   • Consulta: get_infos\n   • Atualização: get_infos → update_reservation\n\n9. CÂMBIO:\n   • Você NÃO faz conversão de câmbio\n   • Responda brevemente que a conversão é no check-in\n\n10. FINALIZAÇÃO:\n    • Após confirmação: reserva_quarto → finish_session\n\n11. INFORMAÇÕES GERAIS:\n    • Quando perguntarem sobre informações gerais, tarifas, preços ou detalhes completos\n    • Use a tool: general_information\n    • Envie o texto COMPLETO sem resumir, exatamente como receber",
     "is_active": true,
-    "version": "2.2",
+    "version": "2.3",
     "created_at": "2025-11-09T00:00:00Z",
     "updated_at": "2025-11-09T00:00:00Z"
   }

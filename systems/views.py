@@ -1579,9 +1579,6 @@ class LogIntegrationView(APIView):
             logger.exception("Erro ao gravar log de integração")
             return Response({"detail": str(e)}, status=500)
 
-
-
-
 class GetRelevantContextView(APIView):
     """
     Retorna contexto relevante baseado na mensagem do usuário
@@ -1646,6 +1643,9 @@ class GetRelevantContextView(APIView):
             if not message:
                 return Response({"detail": "Campo 'message' é obrigatório"}, status=400)
             
+            # Log da mensagem
+            logger.info(f"[RAG] Cliente: {client.name} | Mensagem: {message[:100]}")
+            
             # Buscar contextos relevantes
             contexts = self._search_relevant_contexts(
                 client, 
@@ -1653,6 +1653,10 @@ class GetRelevantContextView(APIView):
                 max_contexts,
                 specific_categories
             )
+            
+            # Log dos contextos encontrados
+            logger.info(f"[RAG] Contextos retornados: {[c['category'] for c in contexts]}")
+            logger.info(f"[RAG] Scores: {[(c['category'], c.get('score', 0)) for c in contexts]}")
             
             # Formatar resposta
             formatted_context = "\n\n---\n\n".join([c['content'] for c in contexts])
@@ -1667,12 +1671,32 @@ class GetRelevantContextView(APIView):
             logger.exception("Erro ao buscar contexto")
             return Response({"detail": str(e)}, status=500)
     
+    def _normalize_text(self, text):
+        """
+        Normaliza texto para busca mais flexível
+        Remove espaços extras, acentos opcionalmente
+        """
+        import unicodedata
+        
+        # Remove acentos
+        text = ''.join(
+            c for c in unicodedata.normalize('NFD', text)
+            if unicodedata.category(c) != 'Mn'
+        )
+        
+        # Lowercase e remove espaços extras
+        text = ' '.join(text.lower().split())
+        
+        return text
+    
     def _search_relevant_contexts(self, client, message, max_contexts, specific_categories):
         """
         Busca contextos relevantes usando palavras-chave
+        OTIMIZADO: Busca mais flexível e melhor scoring
         """
-        # Palavras da mensagem
-        message_words = set(message.split())
+        # Normalizar mensagem
+        normalized_message = self._normalize_text(message)
+        message_words = set(normalized_message.split())
         
         # Buscar todos os contextos ativos do cliente
         query = ContextCategory.objects.filter(client=client, active=True)
@@ -1688,31 +1712,63 @@ class GetRelevantContextView(APIView):
         for ctx in contexts:
             score = 0
             keywords = ctx.keywords or []
+            matched_keywords = []
             
             # Pontuação por palavra-chave encontrada
             for keyword in keywords:
-                if keyword.lower() in message:
-                    score += 2  # Match exato vale mais
-                elif any(keyword.lower() in word for word in message_words):
-                    score += 1  # Match parcial
+                normalized_keyword = self._normalize_text(keyword)
+                
+                # Match exato na mensagem completa
+                if normalized_keyword in normalized_message:
+                    score += 3
+                    matched_keywords.append(keyword)
+                
+                # Match de palavra individual
+                elif normalized_keyword in message_words:
+                    score += 2
+                    matched_keywords.append(keyword)
+                
+                # Match parcial (substring)
+                elif any(normalized_keyword in word for word in message_words):
+                    score += 1
+                    matched_keywords.append(keyword)
             
-            # Adiciona prioridade do contexto
-            score += ctx.priority
+            # Adiciona prioridade do contexto (peso maior)
+            # Multiplica por 2 para dar mais peso à prioridade
+            score += (ctx.priority * 2)
             
-            if score > 0:
+            if score > 0 or ctx.priority >= 10:  # Sempre inclui contextos de prioridade máxima
                 scored_contexts.append({
                     'category': ctx.category,
                     'content': ctx.content,
-                    'score': score
+                    'score': score,
+                    'priority': ctx.priority,
+                    'matched_keywords': matched_keywords[:3]  # Primeiras 3 keywords
                 })
         
-        # Ordenar por score e pegar os top
-        scored_contexts.sort(key=lambda x: x['score'], reverse=True)
+        # Ordenar por score (e desempate por prioridade)
+        scored_contexts.sort(key=lambda x: (x['score'], x['priority']), reverse=True)
         
-        # Se não encontrou nenhum, retorna os mais importantes (por priority)
+        # Log dos scores para debug
+        for ctx in scored_contexts[:5]:  # Top 5
+            logger.debug(
+                f"[RAG] {ctx['category']}: score={ctx['score']}, "
+                f"priority={ctx['priority']}, keywords={ctx['matched_keywords']}"
+            )
+        
+        # Se não encontrou nenhum com keywords, retorna os mais importantes (por priority)
         if not scored_contexts:
+            logger.warning("[RAG] Nenhuma keyword encontrada! Usando fallback por prioridade")
             fallback = contexts.order_by('-priority')[:max_contexts]
-            return [{'category': c.category, 'content': c.content} for c in fallback]
+            return [
+                {
+                    'category': c.category, 
+                    'content': c.content,
+                    'score': 0,
+                    'priority': c.priority
+                } 
+                for c in fallback
+            ]
         
         return scored_contexts[:max_contexts]
 
@@ -1764,6 +1820,9 @@ class GetSystemPromptView(APIView):
             
             prompt_name = request.data.get('prompt_name', 'main')
             
+            # Log
+            logger.info(f"[Prompt] Cliente: {client.name} | Buscando: {prompt_name}")
+            
             # Buscar prompt ativo
             prompt = SystemPrompt.objects.filter(
                 client=client,
@@ -1772,7 +1831,10 @@ class GetSystemPromptView(APIView):
             ).order_by('-updated_at').first()
             
             if not prompt:
+                logger.warning(f"[Prompt] Prompt '{prompt_name}' não encontrado para {client.name}")
                 return Response({"detail": "Prompt não encontrado"}, status=404)
+            
+            logger.info(f"[Prompt] Retornando: {prompt.name} v{prompt.version}")
             
             return Response({
                 "prompt": prompt.prompt_text,
