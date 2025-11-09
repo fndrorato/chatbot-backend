@@ -50,6 +50,11 @@ class ContextCategory(models.Model):
         ('contato', 'Telefones e Contato'),
         ('politicas', 'Políticas do Hotel'),
         ('fluxo_reserva', 'Instruções de Reserva'),
+        ('informacoes_gerais', 'Informações Gerais'),
+        ('eventos', 'Eventos e Atividades'),
+        ('transporte', 'Transporte'),
+        ('localizacao', 'Localização e Atrações'),
+        ('alimentacao', 'Restaurantes e Alimentação'),
     ]
     
     client = models.ForeignKey(
