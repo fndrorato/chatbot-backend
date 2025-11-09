@@ -24,13 +24,13 @@ urlpatterns = [
     path('v1/systems/reservations/cancel/<str:client_type>/', CancelReservationView.as_view(), name='cancel-reservations'),
     
     # RAG - Contexto relevante
-    path('api/v1/context/relevant/', GetRelevantContextView.as_view(), name='get-relevant-context'),
+    path('v1/context/relevant/', GetRelevantContextView.as_view(), name='get-relevant-context'),
     
     # Gerenciar contextos (CRUD)
-    path('api/v1/context/manage/', ManageContextView.as_view(), name='manage-context'),
+    path('v1/context/manage/', ManageContextView.as_view(), name='manage-context'),
     
     # Prompt base do sistema
-    path('api/v1/prompt/system/', GetSystemPromptView.as_view(), name='get-system-prompt'),    
+    path('v1/prompt/system/', GetSystemPromptView.as_view(), name='get-system-prompt'),    
 ]
     
     
