@@ -52,40 +52,98 @@ class ContextCategory(models.Model):
         ('fluxo_reserva', 'Instruções de Reserva'),
     ]
     
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='contexts')
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    content = models.TextField(help_text="Conteúdo estruturado em texto")
+    client = models.ForeignKey(
+        Client, 
+        on_delete=models.CASCADE, 
+        related_name='contexts',
+        verbose_name='Cliente'
+    )
+    category = models.CharField(
+        max_length=50, 
+        choices=CATEGORY_CHOICES,
+        verbose_name='Categoria'
+    )
+    content = models.TextField(
+        help_text="Conteúdo que será enviado ao ChatGPT quando este contexto for relevante",
+        verbose_name='Conteúdo'
+    )
     keywords = models.JSONField(
         default=list,
-        help_text="Lista de palavras-chave para busca rápida"
+        help_text="Palavras-chave para busca (ex: ['quarto', 'cama', 'reserva'])",
+        verbose_name='Palavras-chave',
+        blank=True
     )
-    priority = models.IntegerField(default=0, help_text="Maior = mais importante")
-    active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    priority = models.IntegerField(
+        default=0, 
+        help_text="Maior = mais importante. Contextos com prioridade maior aparecem primeiro.",
+        verbose_name='Prioridade'
+    )
+    active = models.BooleanField(
+        default=True,
+        verbose_name='Ativo'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Criado em'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Atualizado em'
+    )
     
     class Meta:
         db_table = 'context_categories'
         ordering = ['-priority', 'category']
         unique_together = ['client', 'category']
+        verbose_name = 'Contexto RAG'
+        verbose_name_plural = 'Contextos RAG'
     
     def __str__(self):
-        return f"{self.client.name} - {self.category}"
+        return f"{self.get_category_display()} (Prioridade: {self.priority})"
 
 
 class SystemPrompt(models.Model):
     """Armazena prompts base do sistema"""
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='prompts')
-    name = models.CharField(max_length=100, help_text="Nome identificador do prompt")
-    prompt_text = models.TextField(help_text="Texto do prompt")
-    is_active = models.BooleanField(default=True)
-    version = models.CharField(max_length=20, default="1.0")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    client = models.ForeignKey(
+        Client, 
+        on_delete=models.CASCADE, 
+        related_name='prompts',
+        verbose_name='Cliente'
+    )
+    name = models.CharField(
+        max_length=100, 
+        help_text="Nome identificador (ex: 'main', 'concierge', 'support')",
+        verbose_name='Nome'
+    )
+    prompt_text = models.TextField(
+        help_text="Use {chat_id}, {now}, {language} e {context} como placeholders",
+        verbose_name='Texto do Prompt'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Ativo',
+        help_text='Apenas um prompt com o mesmo nome pode estar ativo por vez'
+    )
+    version = models.CharField(
+        max_length=20, 
+        default="1.0",
+        verbose_name='Versão'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Criado em'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Atualizado em'
+    )
     
     class Meta:
         db_table = 'system_prompts'
         ordering = ['-updated_at']
+        verbose_name = 'Prompt do Sistema'
+        verbose_name_plural = 'Prompts do Sistema'
     
     def __str__(self):
-        return f"{self.client.name} - {self.name} v{self.version}"
+        status = '✓' if self.is_active else '✗'
+        return f"{status} {self.name} v{self.version}"

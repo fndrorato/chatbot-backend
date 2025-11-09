@@ -651,6 +651,20 @@ class CheckAvailabilityAveragePerNightView(APIView):
                     status=200
                 )
 
+            # ---- NOVA VERIFICAÇÃO ----
+            # Caso: availability veio com itens mas todos com details vazio
+            if all(
+                isinstance(item, dict) and not item.get("details")
+                for item in availability
+            ):
+                log_entry.status_message = "NO_AVAILABILITY - Error no retorno do detail"
+                log_entry.save()
+                return Response(
+                    {"availability": [], "status": "No availability"},
+                    status=200
+                )
+            # --------------------------                
+
             # ---------- Persistência segura ----------
             for room in availability:
                 if not isinstance(room, dict):
@@ -667,16 +681,7 @@ class CheckAvailabilityAveragePerNightView(APIView):
 
                 if not room_code:
                     continue
-
-                # Busca o quarto. Se ela existir, atualiza. Se não, cria.
-                # room_instance, created = HotelRooms.objects.update_or_create(
-                #     client_id=client,
-                #     room_code=room_code,
-                #     defaults={
-                #         'room_type': room_type,
-                #         'number_of_pax': number_of_pax
-                #     }
-                # )  
+                
                 room_instance, created = HotelRooms.objects.update_or_create(
                     client_id=client,
                     room_code=room_code,
