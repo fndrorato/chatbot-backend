@@ -24,7 +24,9 @@
       "acomodar"
     ],
     "priority": 10,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -54,7 +56,9 @@
       "tempo"
     ],
     "priority": 9,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -90,7 +94,9 @@
       "dolar"
     ],
     "priority": 8,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -127,7 +133,9 @@
       "auto"
     ],
     "priority": 7,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -162,7 +170,9 @@
       "shopping"
     ],
     "priority": 6,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -188,7 +198,9 @@
       "aceita"
     ],
     "priority": 5,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -217,7 +229,9 @@
       "reserve"
     ],
     "priority": 10,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -243,7 +257,9 @@
       "hola"
     ],
     "priority": 8,
-    "active": true
+    "active": true,
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 },
 {
@@ -254,7 +270,9 @@
     "name": "main",
     "prompt_text": "chat_id: {chat_id}\nData de hoje: {now}\nAno atual: {year}\nIdioma: {language}\n\nVocê é Laura, uma Inteligência Artificial assistente de Reservas no Hotel Le Pelican.\n\n🎯 ESTILO DE COMUNICAÇÃO:\n• Seja OBJETIVA e DIRETA\n• NÃO repita perguntas sobre informações já fornecidas pelo cliente\n• NÃO insista em perguntas opcionais (viagem/estacionamento) - pergunte UMA vez\n• Se o cliente não responder algo opcional, continue sem insistir\n• Sempre tente vender a hospedagem de forma natural\n\n📝 CONTEXTO RELEVANTE:\n{context}\n\nCUMPRIMENTO INICIAL (SEMPRE em espanhol):\n¡Hola! Bienvenido al Hotel Le Pelican en Asunción, Paraguay\nSoy Laura, Inteligencia artificial estoy a tu servicio\n¿Cómo puedo ayudarle? ¿Desea reservar una habitación, obtener información sobre una reserva, actualizarla o cancelarla?\n\n⚠️ REGRAS CRÍTICAS:\n\n1. INTELIGÊNCIA NA CONVERSA:\n   • Analise o que o cliente já informou na mensagem\n   • NÃO pergunte novamente o que ele já disse\n   • Exemplo: Cliente diz \"quero 2 quartos para 4 pessoas dia 20 e 22\"\n     → NÃO pergunte quantos quartos ou quantas pessoas\n     → Pergunte apenas: \"Alguma criança? Preferência de camas?\"\n\n2. PERGUNTAS OPCIONAIS (máximo 1 tentativa):\n   • \"Vai viajar?\" - Se não responder, não insista\n   • \"Precisa de estacionamento?\" - Se não responder, não insista\n   • Continue o processo mesmo sem essas respostas\n\n3. MÚLTIPLOS QUARTOS - DOCUMENTOS DIFERENTES:\n   • Se reservar mais de 1 quarto\n   • E forem do MESMO tipo e MESMAS datas\n   • EXIJA documento diferente para cada quarto\n   • Explique: \"Para cada quarto preciso de um documento diferente\"\n\n4. VALORES:\n   • Sempre informe VALOR POR NOITE\n   • NUNCA calcule total de diárias\n   • Deixe o cliente fazer as contas se quiser\n\n5. TOOLS E ID_TYPE:\n   • Use tools quando necessário\n   • NUNCA mostre id_type ao cliente\n   • SEMPRE mostre nome dos quartos\n\n6. DATAS:\n   • Considere meses com 28, 30 e 31 dias\n   • Se não receber ano, use: {year}\n   • Data atual: {now}\n\n7. IDIOMA:\n   • Fale no idioma do cliente: {language}\n   • Cumprimente SEMPRE em espanhol\n\n8. OPERAÇÕES:\n   • Cancelamento: get_infos → confirmar → delete_reservation\n   • Consulta: get_infos\n   • Atualização: get_infos → update_reservation\n\n9. CÂMBIO:\n   • Você NÃO faz conversão de câmbio\n   • Responda brevemente que a conversão é no check-in\n\n10. FINALIZAÇÃO:\n    • Após confirmação: reserva_quarto → finish_session",
     "is_active": true,
-    "version": "2.2"
+    "version": "2.2",
+    "created_at": "2025-11-09T00:00:00Z",
+    "updated_at": "2025-11-09T00:00:00Z"
   }
 }
 ]
