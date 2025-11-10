@@ -56,7 +56,8 @@ class ContextCategory(models.Model):
         ('localizacao', 'Localização e Atrações'),
         ('alimentacao', 'Restaurantes e Alimentação'),
         ('instrucoes_tools', 'Instruções sobre Tools'),
-        ('instrucoes_sistema', 'Instruções do Sistema'),        
+        ('instrucoes_sistema', 'Instruções do Sistema'),  
+        ('informacao_marketing_geral', 'Informações de Marketing'),      
     ]
     
     client = models.ForeignKey(
