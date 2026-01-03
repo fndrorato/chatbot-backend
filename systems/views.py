@@ -59,6 +59,10 @@ class CheckAvailabilityView(APIView):
         }
     )
     def post(self, request, client_type):
+        # print junto com timestap no formato ddd/MM/yyyy HH:MM:SS
+        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        print("CheckAvailabilityView called")
+        print("Request data:", request.data)
         try:
             # ---------- Auth ----------
             auth_header = request.headers.get('Authorization', '')
@@ -252,11 +256,15 @@ class CheckAvailabilityView(APIView):
                 status_http=response.status_code,
                 response_time=elapsed
             )
-
+            # imprimir timestamp e response_data
+            print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+            print("Response data from upstream:", response_data)
+            
             # ---------- Normalização do payload ----------
             data_list = response_data.get("data") or []
             
             if not isinstance(data_list, list) or not data_list:
+                print("Response data4:", response_data)
                 # payload inesperado
                 return Response(
                     {"availability": [], "status": "Invalid or empty data payload"},
@@ -267,6 +275,7 @@ class CheckAvailabilityView(APIView):
 
             # Caso: availability é um dict com status
             if isinstance(availability, dict):
+                print("Response data3:", response_data)
                 status_msg = availability.get("status", "")
                 if status_msg:
                     # ex.: "There is no availability"
@@ -282,6 +291,7 @@ class CheckAvailabilityView(APIView):
 
             # Caso: availability None ou lista vazia
             if not availability:
+                print("Response data2:", response_data)
                 return Response(
                     {"availability": [], "status": "No availability returned"},
                     status=200
@@ -289,6 +299,7 @@ class CheckAvailabilityView(APIView):
 
             # Deve ser lista a partir daqui
             if not isinstance(availability, list):
+                print("Response data1:", response_data)
                 return Response(
                     {"availability": [], "status": "Availability is not a list"},
                     status=200
