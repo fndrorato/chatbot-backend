@@ -952,15 +952,44 @@ class MakeReservationView(APIView):
                 status_http=response.status_code,
                 response_time=elapsed
             )
+            
+            if response.status_code < 400:
+                try:
+                    msg = response_data['data'][0]['response'][0]['msg']
+                except (KeyError, IndexError, TypeError):
+                    msg = "Reserva realizada com sucesso."
 
-            try:
-                msg = response_data['data'][0]['response'][0]['msg']
-            except (KeyError, IndexError, TypeError):
-                msg = "Reserva realizada com sucesso."
+                log_entry.status_message = "SUCCESS"
+                log_entry.save()
+                return Response({"message": msg}, status=response.status_code)
 
-            log_entry.status_message = "SUCCESS"
-            log_entry.save()
-            return Response({"message": msg}, status=response.status_code)
+            else:
+                # ERRO vindo da API externa
+                error_msg = (
+                    response_data.get("message")
+                    or response_data.get("error")
+                    or "Erro ao realizar reserva"
+                )
+
+                log_entry.status_message = f"ERROR {response.status_code}: {error_msg}"
+                log_entry.save()
+
+                return Response(
+                    {
+                        "detail": error_msg,
+                        "status": response.status_code
+                    },
+                    status=response.status_code
+                )            
+
+            # try:
+            #     msg = response_data['data'][0]['response'][0]['msg']
+            # except (KeyError, IndexError, TypeError):
+            #     msg = "Reserva realizada com sucesso."
+
+            # log_entry.status_message = "SUCCESS"
+            # log_entry.save()
+            # return Response({"message": msg}, status=response.status_code)
 
         except Exception as e:
             log_entry = log_received_json(
