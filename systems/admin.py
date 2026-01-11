@@ -18,6 +18,7 @@ class LogIntegrationAdmin(ImportExportModelAdmin):
     )
     list_filter = ('status_http', 'created_at')
     ordering = ('-created_at',)
+    readonly_fields = ('created_at',)
 
 @admin.register(HotelRooms)
 class HotelRoomsAdmin(admin.ModelAdmin):
@@ -37,6 +38,7 @@ class LogApiSystemAdmin(admin.ModelAdmin):
     )
     list_filter = ('created_at',)
     ordering = ('-created_at',)
+    readonly_fields = ('created_at',)
 
 @admin.register(ContextCategory)
 class ContextCategoryAdmin(admin.ModelAdmin):
